@@ -36,6 +36,17 @@ class UserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+        $staff2 = User::firstOrCreate(
+            ['email' => 'staff2@inventory.com'],
+            [
+                'name'              => 'Warehouse Staff 2',
+                'password'          => Hash::make('staff123'),
+                'phone'             => '0987654322',
+                'user_type'         => 'staff',
+                'is_active'         => true,
+                'email_verified_at' => now(),
+            ]
+        );
 
         // --- Assign Warehouses ---
         $warehouses = Warehouse::all();
