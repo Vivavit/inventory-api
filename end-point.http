@@ -1,0 +1,807 @@
+### API Base URL
+@baseUrl = http://localhost:8000/api/v1
+@token = 2|qfVP8ZrhXSkoNCvVSa1TLDiUVIuXeUk0wd5278bT14ff156a
+
+### ========== AUTHENTICATION ENDPOINTS ==========
+
+### Register User
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "password123",
+  "password_confirmation": "password123",
+  "phone": "1234567890"
+}
+
+### Register Another User
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Jane Smith",
+  "email": "jane@example.com",
+  "password": "password456",
+  "password_confirmation": "password456",
+  "phone": "0987654321"
+}
+
+### Login User
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "seller1@example.com",
+  "password": "seller123"
+}
+
+### Verify Email
+POST {{baseUrl}}/auth/verify-email
+Content-Type: application/json
+
+{
+  "email": "john@example.com"
+}
+
+### Get Current User Profile
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+### Update Profile
+PUT {{baseUrl}}/auth/profile
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "John Updated",
+  "email": "john.updated@example.com",
+  "phone": "1111111111"
+}
+
+### Change Password
+POST {{baseUrl}}/auth/change-password
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "current_password": "password123",
+  "new_password": "newpassword123",
+  "new_password_confirmation": "newpassword123"
+}
+
+### Refresh Token
+POST {{baseUrl}}/auth/refresh
+Authorization: Bearer {{token}}
+
+### Logout
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{token}}
+
+### Logout from All Devices
+POST {{baseUrl}}/auth/logout-all
+Authorization: Bearer {{token}}
+
+### ========== USER ENDPOINTS ==========
+
+### Get All Users
+GET {{baseUrl}}/users
+Authorization: Bearer {{token}}
+
+### Get Single User
+GET {{baseUrl}}/users/2
+Authorization: Bearer {{token}}
+Accept: application/json
+### Create User
+POST {{baseUrl}}/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Admin User",
+  "email": "admin@example.com",
+  "password": "password123",
+  "phone": "5555555555",
+  "is_active": true
+}
+
+### Update User
+PUT {{baseUrl}}/users/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Updated Admin",
+  "email": "admin.updated@example.com",
+  "phone": "6666666666"
+}
+
+### Delete User
+DELETE {{baseUrl}}/users/1
+Authorization: Bearer {{token}}
+
+### ========== ROLE ENDPOINTS ==========
+
+### Get All Roles
+GET {{baseUrl}}/roles
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Get Single Role
+GET {{baseUrl}}/roles/1
+Authorization: Bearer {{token}}
+
+### Create Role
+POST {{baseUrl}}/roles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "admin",
+  "description": "Administrator role"
+}
+
+### Create Editor Role
+POST {{baseUrl}}/roles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "editor",
+  "description": "Editor role for managing content"
+}
+
+### Update Role
+PUT {{baseUrl}}/roles/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "admin",
+  "description": "Super Administrator role"
+}
+
+### Delete Role
+DELETE {{baseUrl}}/roles/1
+Authorization: Bearer {{token}}
+
+### ========== PERMISSION ENDPOINTS ==========
+
+### Get All Permissions
+GET {{baseUrl}}/permissions
+Authorization: Bearer {{token}}
+
+### Get Single Permission
+GET {{baseUrl}}/permissions/1
+Authorization: Bearer {{token}}
+
+### Create Permission
+POST {{baseUrl}}/permissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "create_products",
+  "description": "Can create products"
+}
+
+### Create More Permissions
+POST {{baseUrl}}/permissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "edit_products",
+  "description": "Can edit products"
+}
+
+### Create Delete Permission
+POST {{baseUrl}}/permissions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "delete_products",
+  "description": "Can delete products"
+}
+
+### Update Permission
+PUT {{baseUrl}}/permissions/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "create_products",
+  "description": "Can create and modify products"
+}
+
+### Delete Permission
+DELETE {{baseUrl}}/permissions/1
+Authorization: Bearer {{token}}
+
+### ========== USER ROLE & PERMISSION ENDPOINTS ==========
+
+### Get User Roles
+GET {{baseUrl}}/users/1/roles
+Authorization: Bearer {{token}}
+
+### Get User Permissions
+GET {{baseUrl}}/users/1/permissions
+Authorization: Bearer {{token}}
+
+### Assign Role to User
+POST {{baseUrl}}/users/1/assign-role
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "role_id": 1
+}
+
+### Revoke Role from User
+POST {{baseUrl}}/users/1/revoke-role
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "role_id": 1
+}
+
+### Sync User Roles
+POST {{baseUrl}}/users/1/sync-roles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roles": [1, 2]
+}
+
+### Check User Permission
+POST {{baseUrl}}/users/1/check-permission
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "permission": "create_products"
+}
+
+### Check User Role
+POST {{baseUrl}}/users/1/check-role
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "role": "admin"
+}
+
+### Assign Permission to Role
+POST {{baseUrl}}/roles/1/assign-permission
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "permission_id": 1
+}
+
+### Revoke Permission from Role
+POST {{baseUrl}}/roles/1/revoke-permission
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "permission_id": 1
+}
+
+### ========== CATEGORY ENDPOINTS ==========
+
+### Get All Categories
+GET {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+
+### Get All Categories (Public)
+GET {{baseUrl}}/categories
+
+### Get Single Category
+GET {{baseUrl}}/categories/1
+Authorization: Bearer {{token}}
+
+### Create Category
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Electronics",
+  "slug": "electronics",
+  "description": "Electronic products",
+  "is_active": true
+}
+
+### Create Another Category
+POST {{baseUrl}}/categories
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Clothing",
+  "slug": "clothing",
+  "description": "Clothing and apparel",
+  "is_active": true
+}
+
+### Update Category
+PUT {{baseUrl}}/categories/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Electronics Updated",
+  "slug": "electronics-updated",
+  "description": "Updated electronics products"
+}
+
+### Delete Category
+DELETE {{baseUrl}}/categories/1
+Authorization: Bearer {{token}}
+
+### ========== BRAND ENDPOINTS ==========
+
+### Get All Brands
+GET {{baseUrl}}/brands
+Authorization: Bearer {{token}}
+
+### Get All Brands (Public)
+GET {{baseUrl}}/brands
+
+### Get Single Brand
+GET {{baseUrl}}/brands/1
+Authorization: Bearer {{token}}
+
+### Create Brand
+POST {{baseUrl}}/brands
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Apple",
+  "slug": "apple",
+  "description": "Apple Inc.",
+  "is_active": true
+}
+
+### Create Another Brand
+POST {{baseUrl}}/brands
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Samsung",
+  "slug": "samsung",
+  "description": "Samsung Electronics",
+  "is_active": true
+}
+
+### Update Brand
+PUT {{baseUrl}}/brands/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Apple Inc.",
+  "slug": "apple-inc",
+  "description": "Apple Inc. Products"
+}
+
+### Delete Brand
+DELETE {{baseUrl}}/brands/1
+Authorization: Bearer {{token}}
+
+### ========== PRODUCT ENDPOINTS ==========
+
+### Get All Products
+GET {{baseUrl}}/products
+Authorization: Bearer {{token}}
+
+### Get All Products (Public)
+GET {{baseUrl}}/products
+
+### Get Products with Filters
+GET {{baseUrl}}/products?category_id=1&search=phone
+Authorization: Bearer {{token}}
+
+### Get Single Product
+GET {{baseUrl}}/products/1
+Authorization: Bearer {{token}}
+
+### Create Product
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "category_id": 1,
+  "brand_id": 1,
+  "name": "iPhone 15",
+  "slug": "iphone-15",
+  "sku": "IP15-001",
+  "short_description": "Latest iPhone",
+  "description": "iPhone 15 with advanced features",
+  "price": 999.99,
+  "compare_price": 1099.99,
+  "cost_price": 500,
+  "stock_quantity": 100,
+  "low_stock_threshold": 10,
+  "manage_stock": true,
+  "stock_status": "in_stock",
+  "is_active": true
+}
+
+### Create Another Product
+POST {{baseUrl}}/products
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "category_id": 1,
+  "brand_id": 2,
+  "name": "Samsung S24",
+  "slug": "samsung-s24",
+  "sku": "SM-S24-001",
+  "short_description": "Samsung Galaxy S24",
+  "description": "Samsung Galaxy S24 smartphone",
+  "price": 899.99,
+  "compare_price": 999.99,
+  "cost_price": 450,
+  "stock_quantity": 150,
+  "low_stock_threshold": 15,
+  "manage_stock": true,
+  "stock_status": "in_stock",
+  "is_active": true
+}
+
+### Update Product
+PUT {{baseUrl}}/products/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "iPhone 15 Pro",
+  "price": 1099.99,
+  "stock_quantity": 95
+}
+
+### Delete Product
+DELETE {{baseUrl}}/products/1
+Authorization: Bearer {{token}}
+
+### ========== CUSTOMER ENDPOINTS ==========
+
+### Get All Customers
+GET {{baseUrl}}/customers
+Authorization: Bearer {{token}}
+
+### Get All Customers (Public)
+GET {{baseUrl}}/customers
+
+### Get Single Customer
+GET {{baseUrl}}/customers/1
+Authorization: Bearer {{token}}
+
+### Create Customer
+POST {{baseUrl}}/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "John Customer",
+  "email": "customer@example.com",
+  "password": "password123",
+  "phone": "9999999999",
+  "date_of_birth": "1990-01-15",
+  "gender": "male",
+  "is_active": true
+}
+
+### Create Another Customer
+POST {{baseUrl}}/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Jane Customer",
+  "email": "jane.customer@example.com",
+  "password": "password456",
+  "phone": "8888888888",
+  "date_of_birth": "1992-05-20",
+  "gender": "female",
+  "is_active": true
+}
+
+### Update Customer
+PUT {{baseUrl}}/customers/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "John Updated Customer",
+  "phone": "7777777777"
+}
+
+### Delete Customer
+DELETE {{baseUrl}}/customers/1
+Authorization: Bearer {{token}}
+
+### ========== ADDRESS ENDPOINTS ==========
+
+### Get All Addresses
+GET {{baseUrl}}/addresses
+Authorization: Bearer {{token}}
+
+### Get Addresses by Customer
+GET {{baseUrl}}/addresses?customer_id=1
+Authorization: Bearer {{token}}
+
+### Get Single Address
+GET {{baseUrl}}/addresses/1
+Authorization: Bearer {{token}}
+
+### Create Address
+POST {{baseUrl}}/addresses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": 1,
+  "full_name": "John Doe",
+  "phone": "9999999999",
+  "address_line_1": "123 Main Street",
+  "address_line_2": "Apt 4B",
+  "city": "New York",
+  "state": "NY",
+  "postal_code": "10001",
+  "country": "USA",
+  "is_default": true
+}
+
+### Create Another Address
+POST {{baseUrl}}/addresses
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customer_id": 1,
+  "full_name": "John Doe",
+  "phone": "9999999999",
+  "address_line_1": "456 Oak Avenue",
+  "city": "Los Angeles",
+  "state": "CA",
+  "postal_code": "90001",
+  "country": "USA",
+  "is_default": false
+}
+
+### Update Address
+PUT {{baseUrl}}/addresses/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "address_line_1": "789 New Street",
+  "city": "Boston",
+  "postal_code": "02101"
+}
+
+### Delete Address
+DELETE {{baseUrl}}/addresses/1
+Authorization: Bearer {{token}}
+
+### ========== ORDER ENDPOINTS ==========
+
+### Get All Orders
+GET {{baseUrl}}/orders
+Authorization: Bearer {{token}}
+Accept: application/json
+### Get Orders by Customer
+GET {{baseUrl}}/orders?customer_id=1
+Authorization: Bearer {{token}}
+
+### Get Single Order
+GET {{baseUrl}}/orders/1
+Authorization: Bearer {{token}}
+
+### Create Order
+POST {{baseUrl}}/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "customer_id": 1,
+  "coupon_id": null,
+  "subtotal": 999.99,
+  "discount_amount": 0,
+  "shipping_cost": 10.00,
+  "tax_amount": 80.99,
+  "total": 1090.98,
+  "status": "pending",
+  "shipping_full_name": "John Doe",
+  "shipping_phone": "9999999999",
+  "shipping_address_line_1": "123 Main Street",
+  "shipping_address_line_2": "Apt 4B",
+  "shipping_city": "New York",
+  "shipping_state": "NY",
+  "shipping_postal_code": "10001",
+  "shipping_country": "USA",
+  "items": [
+    {
+      "product_id": 1,
+      "quantity": 1,
+      "price": 999.99
+    },
+    {
+      "product_id": 2,
+      "quantity": 3,
+      "price": 599.99
+    }
+  ]
+}
+
+### Create Another Order
+POST {{baseUrl}}/orders
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "customer_id": 2,
+  "coupon_id": null,
+  "subtotal": 899.99,
+  "discount_amount": 50.00,
+  "shipping_cost": 15.00,
+  "tax_amount": 67.99,
+  "total": 932.98,
+  "status": "pending",
+  "shipping_full_name": "Jane Customer",
+  "shipping_phone": "8888888888",
+  "shipping_address_line_1": "456 Oak Avenue",
+  "shipping_city": "Los Angeles",
+  "shipping_state": "CA",
+  "shipping_postal_code": "90001",
+  "shipping_country": "USA",
+  "items": [
+    {
+      "product_id": 2,
+      "quantity": 1,
+      "price": 899.99
+    }
+  ]
+}
+
+### Update Order Status
+PUT {{baseUrl}}/orders/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "confirmed"
+}
+
+### Delete Order
+DELETE {{baseUrl}}/orders/5
+Authorization: Bearer {{token}}
+
+### ========== COUPON ENDPOINTS ==========
+
+### Get All Coupons
+GET {{baseUrl}}/coupons
+Authorization: Bearer {{token}}
+
+### Get Single Coupon
+GET {{baseUrl}}/coupons/1
+Authorization: Bearer {{token}}
+
+### Create Discount Coupon
+POST {{baseUrl}}/coupons
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "code": "SAVE10",
+  "description": "10% discount on all items",
+  "discount_type": "percentage",
+  "discount_value": 10,
+  "usage_limit": 100,
+  "usage_per_customer": 1,
+  "min_order_amount": 50,
+  "valid_from": "2024-01-01",
+  "valid_until": "2024-12-31",
+  "is_active": true
+}
+
+### Create Fixed Discount Coupon
+POST {{baseUrl}}/coupons
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "code": "SAVE50",
+  "description": "$50 discount",
+  "discount_type": "fixed",
+  "discount_value": 50,
+  "usage_limit": 50,
+  "usage_per_customer": 2,
+  "min_order_amount": 100,
+  "valid_from": "2024-01-01",
+  "valid_until": "2024-12-31",
+  "is_active": true
+}
+
+### Update Coupon
+PUT {{baseUrl}}/coupons/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "discount_value": 15,
+  "usage_limit": 150
+}
+
+### Delete Coupon
+DELETE {{baseUrl}}/coupons/1
+Authorization: Bearer {{token}}
+
+### ========== REVIEW ENDPOINTS ==========
+
+### Get All Reviews
+GET {{baseUrl}}/reviews
+Authorization: Bearer {{token}}
+
+### Get Reviews for Product
+GET {{baseUrl}}/reviews?product_id=1
+Authorization: Bearer {{token}}
+
+### Get Single Review
+GET {{baseUrl}}/reviews/1
+Authorization: Bearer {{token}}
+
+### Create Review
+POST {{baseUrl}}/reviews
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_id": 1,
+  "customer_id": 1,
+  "rating": 5,
+  "title": "Excellent Product",
+  "comment": "Great quality and fast delivery!"
+}
+
+### Create Another Review
+POST {{baseUrl}}/reviews
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "product_id": 1,
+  "customer_id": 2,
+  "rating": 4,
+  "title": "Good Product",
+  "comment": "Good quality but a bit expensive"
+}
+
+### Update Review
+PUT {{baseUrl}}/reviews/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rating": 4,
+  "comment": "Good product, updated review"
+}
+
+### Delete Review
+DELETE {{baseUrl}}/reviews/1
+Authorization: Bearer {{token}}

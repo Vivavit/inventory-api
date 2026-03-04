@@ -1,0 +1,19 @@
+- 1
+    composer require dedoc/scramble
+    php artisan vendor:publish --provider="Dedoc\Scramble\ScrambleServiceProvider" --tag="scramble-config"
+- 2
+    php artisan install:api
+- 3
+    composer require spatie/laravel-permission
+    php artisan vendor:publish --provider="Spatie\Permission\PermissionServiceProvider"
+    php artisan config:clear
+-4 
+    composer require laravel/fortify
+    php artisan fortify:install
+    php artisan migrate
+
+-5 
+    composer require filament/filament:^4.0
+    php artisan filament:install --panels
+    php artisan make:filament-user
+    php artisan vendor:publish --tag=filament-config
