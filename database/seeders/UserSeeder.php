@@ -36,6 +36,7 @@ class UserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
         $staff2 = User::firstOrCreate(
             ['email' => 'staff2@inventory.com'],
             [
@@ -79,5 +80,6 @@ class UserSeeder extends Seeder
 
         $this->command->info('Users created: admin@inventory.com / 123456789');
         $this->command->info('Staff: staff1@inventory.com / staff123');
+        $this->command->info('Staff: staff2@inventory.com / staff123');
     }
 }
