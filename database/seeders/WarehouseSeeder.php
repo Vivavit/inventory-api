@@ -49,7 +49,7 @@ class WarehouseSeeder extends Seeder
         ];
 
         foreach ($warehouses as $warehouse) {
-            Warehouse::create($warehouse);
+            Warehouse::updateOrCreate(['code' => $warehouse['code']], $warehouse);
         }
 
         $this->command->info('Warehouses created successfully!');
