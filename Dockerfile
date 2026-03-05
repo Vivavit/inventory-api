@@ -21,17 +21,14 @@ COPY . .
 
 RUN composer dump-autoload --optimize --ignore-platform-reqs
 
-# Copy Aiven CA cert to a known location
 COPY ca.pem /var/www/ca.pem
 
 RUN chmod -R 775 storage bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 EXPOSE 10000
 
-CMD php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan migrate --force && \
-    php artisan db:seed --force && \
-    php artisan storage:link && \
-    php artisan serve --host=0.0.0.0 --port=10000
+CMD ["/usr/local/bin/docker-entrypoint.sh"]
