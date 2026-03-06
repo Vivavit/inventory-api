@@ -21,6 +21,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/products', [ProductApiController::class, 'store']);
     });
 
+    Route::get('/health', function () {
+        return response()->json(['status' => 'ok']);
+    });
+
     // inventory
     Route::get('/products', [ProductApiController::class, 'index']);
 
