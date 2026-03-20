@@ -443,16 +443,53 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--green), var(--teal));
+            position: relative;
+            background: var(--green);
             color: white;
             border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.3s ease;
         }
 
+        /* Hover lift + gradient shift */
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-hover);
-            color: white;
-            text-decoration: none;
+            background: var(--green);
+        }
+
+        /* Click effect */
+        .btn-primary:active {
+            transform: scale(0.96);
+        }
+
+        /* Shine animation */
+        .btn-primary::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -75%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(255,255,255,0.4),
+                transparent
+            );
+            transform: skewX(-20deg);
+        }
+
+        /* Animate shine on hover */
+        .btn-primary:hover::before {
+            animation: shine 0.8s ease forwards;
+        }
+
+        @keyframes shine {
+            100% {
+                left: 125%;
+            }
         }
 
         .btn-secondary {
@@ -686,7 +723,7 @@
 <div class="sidebar" id="sidebar">
     
     <div class="logo" id="logo-toggle" title="Click to toggle sidebar">
-        <i class="bi bi-box"></i>
+        <img src="{{ asset('storage/products/logo_white.png') }}" alt="Logo" style="height: 30px; width: 30px; object-fit: contain;">
         <span class="logo-text">Cam Inventory</span>
     </div>
     
