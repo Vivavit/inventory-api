@@ -57,7 +57,9 @@ class OrderController extends Controller
                     ->first();
 
                 if (! $stock || $stock->quantity < $item['quantity']) {
-                    abort(400, 'Not enough stock for product ID ' . $item['product_id']);
+                    return redirect()->back()
+                        ->withInput()
+                        ->withErrors(['items' => 'Not enough stock for product ID '.$item['product_id'].' in selected warehouse.']);
                 }
 
                 $stock->decrement('quantity', $item['quantity']);
