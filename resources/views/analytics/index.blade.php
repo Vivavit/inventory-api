@@ -3,21 +3,345 @@
 @section('title', 'Inventory Analytics')
 
 @section('content')
-<div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h2 fw-bold text-dark mb-1">Inventory Analytics</h1>
-            <p class="text-muted mb-0">Data-driven inventory management</p>
-        </div>
+
+<style>
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+
+    .kpi-card {
+        background: white;
+        border: 1px solid #f0f0f0;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.04);
+        transition: all 0.3s ease;
+    }
+
+    .kpi-card:hover {
+        box-shadow: 0 8px 24px rgba(0,0,0,.08);
+        transform: translateY(-2px);
+    }
+
+    .kpi-card-icon {
+        font-size: 32px;
+        margin-bottom: 8px;
+        opacity: 0.8;
+    }
+
+    .kpi-card-label {
+        font-size: 12px;
+        color: #999;
+        font-weight: 500;
+    }
+
+    .kpi-card-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--green);
+        margin: 8px 0 0 0;
+    }
+
+    .dashboard-section {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #f0f0f0;
+        box-shadow: 0 4px 12px rgba(0,0,0,.04);
+        overflow: hidden;
+    }
+
+    .dashboard-tabs {
+        display: flex;
+        gap: 0;
+        border-bottom: 2px solid #e0e0e0;
+        background: white;
+        padding: 0;
+        margin: 0;
+    }
+
+    .tab-btn {
+        padding: 16px 24px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        color: #999;
+        transition: all 0.3s ease;
+        border-bottom: 3px solid transparent;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        position: relative;
+        margin-bottom: 0;
+    }
+
+    .tab-btn:hover {
+        color: var(--green);
+        background: rgba(3, 98, 76, 0.03);
+    }
+
+    .tab-btn.active {
+        color: var(--green);
+        border-bottom-color: var(--green);
+        font-weight: 700;
+    }
+
+    .tab-pane {
+        display: none;
+        animation: slideUp 0.3s ease;
+        padding: 24px;
+    }
+
+    .tab-pane.active {
+        display: block;
+    }
+
+    @keyframes slideUp {
+        from { 
+            opacity: 0; 
+            transform: translateY(10px); 
+        }
+        to { 
+            opacity: 1; 
+            transform: translateY(0); 
+        }
+    }
+
+    .filter-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 24px;
+        overflow-x: auto;
+        padding-bottom: 8px;
+    }
+
+    .filter-tab {
+        padding: 8px 16px;
+        background: #f0f0f0;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.25s ease;
+        white-space: nowrap;
+    }
+
+    .filter-tab:hover {
+        background: var(--mint);
+        color: var(--green);
+    }
+
+    .filter-tab.active {
+        background: var(--green);
+        color: white;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
+        border: 1px solid #f0f0f0;
+        box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    }
+
+    .chart-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--green);
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .chart-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .stat-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 16px;
+    }
+
+    .stat-table th {
+        background: #f8f9fa;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 2px solid #e0e0e0;
+        font-size: 12px;
+        color: #666;
+    }
+
+    .stat-table td {
+        padding: 12px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .stat-table tr:hover {
+        background: #f8f9fa;
+    }
+
+    .warehouse-card {
+        border: 1px solid #f0f0f0;
+        border-radius: 12px;
+        padding: 20px;
+        background: white;
+    }
+
+    .warehouse-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .warehouse-name {
+        margin: 0;
+        color: var(--green);
+        font-weight: 600;
+    }
+
+    .warehouse-bar {
+        width: 100%;
+        height: 6px;
+        background: #f0f0f0;
+        border-radius: 3px;
+        overflow: hidden;
+        margin: 8px 0 12px 0;
+    }
+
+    .warehouse-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--green), var(--teal));
+    }
+
+    .warehouse-stats {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        color: #999;
+    }
+
+    .upgrade-section {
+        background: linear-gradient(135deg, var(--green), #0fb9b1);
+        border-radius: 12px;
+        padding: 32px;
+        color: white;
+        text-align: center;
+        margin-top: 32px;
+    }
+
+    .upgrade-section h3 {
+        font-size: 24px;
+        font-weight: 700;
+        margin: 0 0 12px;
+    }
+
+    .upgrade-section p {
+        margin: 0 0 20px;
+        opacity: 0.9;
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-tabs {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab-btn {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .chart-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<!-- TOP KPI METRICS -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-card-icon" style="color: var(--teal);"><i class="bi bi-cash-coin"></i></div>
+        <div class="kpi-card-label">Average Stock Value</div>
+        <div class="kpi-card-value">${{ number_format($metrics['average_stock_value'], 0) }}</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-card-icon" style="color: #ff9800;"><i class="bi bi-exclamation-triangle"></i></div>
+        <div class="kpi-card-label">Low Stock Items</div>
+        <div class="kpi-card-value">{{ $metrics['low_stock_alert_count'] }}</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-card-icon" style="color: #ff6b6b;"><i class="bi bi-x-circle"></i></div>
+        <div class="kpi-card-label">Out of Stock</div>
+        <div class="kpi-card-value">{{ $metrics['out_of_stock_count'] ?? 0 }}</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-card-icon" style="color: #2ecc71;"><i class="bi bi-bag-check"></i></div>
+        <div class="kpi-card-label">Sales Today</div>
+        <div class="kpi-card-value">{{ $metrics['total_sales_today'] }}</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-card-icon" style="color: var(--blue);"><i class="bi bi-calendar-check"></i></div>
+        <div class="kpi-card-label">Sales This Month</div>
+        <div class="kpi-card-value">{{ $metrics['total_sales_month'] }}</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-card-icon" style="color: var(--green);"><i class="bi bi-graph-up"></i></div>
+        <div class="kpi-card-label">Sales This Year</div>
+        <div class="kpi-card-value">{{ $metrics['total_sales_year'] }}</div>
+    </div>
+</div>
+
+<!-- ANALYTICS SECTION WITH TABS -->
+<div class="dashboard-section">
+    <!-- TABS -->
+    <div class="dashboard-tabs" id="analyticsTabs">
+        <button class="tab-btn active" data-tab="overview" title="Overview">
+            <i class="bi bi-speedometer2"></i>
+            <span>Overview</span>
+        </button>
+        <button class="tab-btn" data-tab="trends" title="Trends">
+            <i class="bi bi-graph-up"></i>
+            <span>Trends</span>
+        </button>
+        <button class="tab-btn" data-tab="warehouse" title="Warehouse">
+            <i class="bi bi-building"></i>
+            <span>Warehouse</span>
+        </button>
+        <button class="tab-btn" data-tab="reports" title="Reports">
+            <i class="bi bi-file-text"></i>
+            <span>Reports</span>
+        </button>
+    </div>
+
+    <!-- TAB CONTENT -->
+    <div class="tab-content">
         
-        <!-- Period Filter -->
-        <div class="d-flex align-items-center">
-            <span class="me-2 text-muted">Period:</span>
-            <div class="btn-group btn-group-sm" role="group">
+        <!-- OVERVIEW TAB -->
+<div class="tab-pane active" id="overview">
+    <!-- Period Filter -->
+    <div style="margin-bottom: 24px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="color: #666; font-weight: 500;">Period:</span>
+            <div class="filter-tabs" style="margin: 0;">
                 @foreach(['day' => 'Today', 'week' => 'This Week', 'month' => 'This Month', 'year' => 'This Year'] as $key => $label)
-                    <a href="?period={{ $key }}" 
-                       class="btn {{ $period == $key ? 'btn-primary' : 'btn-outline-primary' }}">
+                    <a href="?period={{ $key }}" class="filter-tab {{ $period == $key ? 'active' : '' }}">
                         {{ $label }}
                     </a>
                 @endforeach
@@ -25,381 +349,496 @@
         </div>
     </div>
 
-
-    <div class="row g-3 mb-4">
-        <!-- Avg Stock Value -->
-        <div class="col-xl-4 col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-muted mb-2">Avg. Stock Value</h6>
-                            <h3 class="fw-bold mb-0">
-                                ${{ number_format($metrics['average_stock_value'], 2) }}
-                            </h3>
-                        </div>
-                        <div >
-                            <i class="bi bi-cash fs-4 text-success"></i>
-                        </div>
-                    </div>
-                </div>
+    <div class="chart-grid">
+        <!-- Stock Value Trend -->
+        <div class="chart-card">
+            <h3 class="chart-title">
+                <i class="bi bi-graph-up"></i> Stock Value Trend
+            </h3>
+            <div style="position: relative; height: 300px; width: 100%;">
+                <canvas id="stockValueChart"></canvas>
             </div>
         </div>
 
-        <!-- Low Stock Items -->
-        <div class="col-xl-4 col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-muted mb-2">Low Stock Items</h6>
-                            <h3 class="fw-bold mb-0">
-                                {{ $metrics['low_stock_alert_count'] }}
-                            </h3>
-                        </div>
-                        <div >
-                            <i class="bi bi-exclamation-triangle fs-4 text-warning"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Out of Stock Items -->
-        <div class="col-xl-4 col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-muted mb-2">Out of Stock</h6>
-                            <h3 class="fw-bold mb-0">
-                                {{ $metrics['out_of_stock_count'] ?? 0 }}
-                            </h3>
-                        </div>
-                        <div>
-                            <i class="bi bi-x-circle fs-4 text-danger"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Sales Metrics Cards -->
-    <div class="row g-3 mb-4">
-        <div class="col-xl-4 col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-muted mb-2">Sales Today</h6>
-                            <h3 class="fw-bold mb-0">{{ $metrics['total_sales_today'] }}</h3>
-                        </div>
-                        <div>
-                            <i class="bi bi-cart-check fs-4 text-success"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-4 col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-muted mb-2">Sales This Month</h6>
-                            <h3 class="fw-bold mb-0">{{ $metrics['total_sales_month'] }}</h3>
-                        </div>
-                        <div>
-                            <i class="bi bi-calendar-check fs-4 text-info"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-4 col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-muted mb-2">Sales This Year</h6>
-                            <h3 class="fw-bold mb-0">{{ $metrics['total_sales_year'] }}</h3>
-                        </div>
-                        <div>
-                            <i class="bi bi-graph-up fs-4 text-primary"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Charts Section -->
-    <div class="row g-4 mb-4">
-        <!-- Stock Value Trend Chart -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white border-0 pt-3">
-                    <h5 class="fw-bold mb-0">Stock Value Trend (Last 30 Days)</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="stockValueChart" height="250"></canvas>
-                </div>
-            </div>
-        </div>
-        
         <!-- Category Distribution -->
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white border-0 pt-3">
-                    <h5 class="fw-bold mb-0">Inventory by Category</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="categoryChart" height="250"></canvas>
-                </div>
+        <div class="chart-card">
+            <h3 class="chart-title">
+                <i class="bi bi-pie-chart"></i> Inventory by Category
+            </h3>
+            <div style="position: relative; height: 300px; width: 100%;">
+                <canvas id="categoryChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- Warehouse Performance -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white border-0 pt-3">
-            <h5 class="fw-bold mb-0">Warehouse Performance</h5>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                @forelse($charts['warehouse_utilization'] as $warehouse)
-                <div class="col-lg-4 col-md-6">
-                    <div class="border rounded-3 p-3 h-100">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold mb-0">{{ $warehouse->name }}</h6>
-                            <span class="badge bg-{{ $warehouse->utilization > 80 ? 'danger' : ($warehouse->utilization > 60 ? 'warning' : 'success') }}">
-                                {{ $warehouse->utilization }}%
-                            </span>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between small text-muted mb-1">
-                                <span>Capacity</span>
-                                <span>{{ $warehouse->used_capacity }} / {{ $warehouse->total_capacity }}</span>
-                            </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-{{ $warehouse->utilization > 80 ? 'danger' : ($warehouse->utilization > 60 ? 'warning' : 'success') }}" 
-                                     style="width: {{ $warehouse->utilization }}%"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between small text-muted">
-                            <span><i class="bi bi-box me-1"></i> {{ $warehouse->item_count }} items</span>
-                            <span>{{ $warehouse->utilization > 80 ? 'Overutilized' : ($warehouse->utilization > 60 ? 'Moderate' : 'Optimal') }}</span>
-                        </div>
-                    </div>
-                </div>
-                @empty
-                <div class="col-12">
-                    <div class="text-center text-muted py-4">
-                        <i class="bi bi-warehouse fs-1 mb-3"></i>
-                        <p>No warehouse data available</p>
-                    </div>
-                </div>
-                @endforelse
-            </div>
+    <!-- Sales Distribution -->
+    <div class="chart-card" style="margin-bottom: 24px;">
+        <h3 class="chart-title">
+            <i class="bi bi-bag-check"></i> Sales Trend (Last 7 Days)
+        </h3>
+        <div style="position: relative; height: 250px; width: 100%;">
+            <canvas id="salesTrendChart"></canvas>
         </div>
     </div>
 
-    <!-- Sales Trend Chart -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-0 pt-3">
-            <h5 class="fw-bold mb-0">Sales Trend (Last 7 Days)</h5>
+    <!-- Top Products & Low Stock -->
+    <div class="chart-grid">
+        <div class="chart-card">
+            <h3 class="chart-title">
+                <i class="bi bi-star-fill" style="color: #ffd700;"></i> Top Products
+            </h3>
+            <table class="stat-table">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Sales</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($charts['top_products'] ?? [] as $product)
+                        <tr>
+                            <td>{{ substr($product['name'], 0, 20) }}</td>
+                            <td><span class="badge badge-success">{{ $product['count'] }}</span></td>
+                            <td>${{ number_format($product['value'], 0) }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: #999;">No data available</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
-        <div class="card-body">
-            <canvas id="salesTrendChart" height="250"></canvas>
+
+        <div class="chart-card">
+            <h3 class="chart-title">
+                <i class="bi bi-exclamation-circle" style="color: #ff6b6b;"></i> Low Stock Items
+            </h3>
+            <table class="stat-table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Stock</th>
+                        <th>Threshold</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($charts['low_stock_items'] ?? [] as $item)
+                        <tr>
+                            <td>{{ substr($item['name'], 0, 20) }}</td>
+                            <td><span class="badge badge-warning">{{ $item['current'] }}</span></td>
+                            <td>{{ $item['threshold'] }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: #999;">All items well stocked!</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
+<style>
+    /* Add this to your stylesheet to fix chart sizing */
+    .chart-card canvas {
+        max-width: 100%;
+    }
+</style>
+
+<script>
+// Update your chart initialization with proper options
+function initCharts() {
+    // Stock Value Trend
+    const stockValueData = @json($charts['stock_value_trend'] ?? []);
+    if (document.getElementById('stockValueChart') && stockValueData.labels) {
+        const stockCtx = document.getElementById('stockValueChart').getContext('2d');
+        new Chart(stockCtx, {
+            type: 'line',
+            data: {
+                labels: stockValueData.labels || [],
+                datasets: [{
+                    label: 'Stock Value ($)',
+                    data: stockValueData.values || [],
+                    borderColor: '#03624C',
+                    backgroundColor: 'rgba(3, 98, 76, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#03624C',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { 
+                    legend: { display: false } 
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { drawBorder: false } 
+                    },
+                    x: { 
+                        grid: { display: false } 
+                    }
+                }
+            }
+        });
+    }
+
+    // Category Distribution
+    const categoryData = @json($charts['category_distribution'] ?? []);
+    if (document.getElementById('categoryChart') && categoryData.labels) {
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: categoryData.labels || [],
+                datasets: [{
+                    data: categoryData.values || [],
+                    backgroundColor: ['#03624C', '#0fb9b1', '#4facfe', '#ff6b6b', '#ffd93d', '#6b5b95'],
+                    borderWidth: 1,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: '70%',
+                plugins: { 
+                    legend: { position: 'bottom' } 
+                }
+            }
+        });
+    }
+
+    // Sales Trend
+    const salesTrendData = @json($charts['sales_trend'] ?? []);
+    if (document.getElementById('salesTrendChart') && salesTrendData.labels) {
+        const salesCtx = document.getElementById('salesTrendChart').getContext('2d');
+        new Chart(salesCtx, {
+            type: 'bar',
+            data: {
+                labels: salesTrendData.labels || [],
+                datasets: [{
+                    label: 'Sales',
+                    data: salesTrendData.values || [],
+                    backgroundColor: 'rgba(3, 98, 76, 0.2)',
+                    borderColor: '#03624C',
+                    borderWidth: 2,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { 
+                    legend: { display: false } 
+                },
+                scales: { 
+                    y: { beginAtZero: true }, 
+                    x: { grid: { display: false } } 
+                }
+            }
+        });
+    }
+}
+
+// Call after tab content loads
+document.addEventListener('DOMContentLoaded', function() {
+    initCharts();
+});
+</script>
+
+        <!-- TRENDS TAB -->
+        <div class="tab-pane" id="trends">
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h3 class="chart-title">
+                        <i class="bi bi-graph-up"></i> Monthly Sales Trend
+                    </h3>
+                    <canvas id="monthlySalesChart" height="300"></canvas>
+                </div>
+
+                <div class="chart-card">
+                    <h3 class="chart-title">
+                        <i class="bi bi-graph-down"></i> Stock Movement
+                    </h3>
+                    <canvas id="stockMovementChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card" style="margin-bottom: 24px;">
+                <h3 class="chart-title">
+                    <i class="bi bi-bar-chart"></i> Category Performance
+                </h3>
+                <canvas id="categoryPerformanceChart" height="350"></canvas>
+            </div>
+        </div>
+
+        <!-- WAREHOUSE TAB -->
+        <div class="tab-pane" id="warehouse">
+            <div style="margin-bottom: 24px;">
+                <h3 style="margin: 0 0 16px; color: var(--green); font-weight: 700;">Warehouse Performance</h3>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                @forelse($charts['warehouse_utilization'] ?? [] as $warehouse)
+                    <div class="warehouse-card">
+                        <div class="warehouse-header">
+                            <h4 class="warehouse-name">{{ $warehouse->name }}</h4>
+                            <span class="badge {{ $warehouse->utilization > 80 ? 'badge-danger' : ($warehouse->utilization > 60 ? 'badge-warning' : 'badge-success') }}"
+                                  style="font-size: 12px;">
+                                {{ $warehouse->utilization }}%
+                            </span>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; color: #999; margin-bottom: 8px;">
+                                <span>Capacity</span>
+                                <span>{{ $warehouse->used_capacity }} / {{ $warehouse->total_capacity }}</span>
+                            </div>
+                            <div class="warehouse-bar">
+                                <div class="warehouse-fill" style="width: {{ $warehouse->utilization }}%;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="warehouse-stats">
+                            <span><i class="bi bi-box"></i> {{ $warehouse->item_count }} items</span>
+                            <span>{{ $warehouse->utilization > 80 ? 'Overutilized' : ($warehouse->utilization > 60 ? 'Moderate' : 'Optimal') }}</span>
+                        </div>
+                    </div>
+                @empty
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #999;">
+                        <i class="bi bi-warehouse" style="font-size: 48px; margin-bottom: 12px; display: block;"></i>
+                        <p>No warehouse data available</p>
+                    </div>
+                @endforelse
+            </div>
+
+            <!-- Warehouse Comparison Chart -->
+            <div class="chart-card" style="margin-top: 24px;">
+                <h3 class="chart-title">
+                    <i class="bi bi-building"></i> Warehouse Comparison
+                </h3>
+                <canvas id="warehouseComparisonChart" height="300"></canvas>
+            </div>
+        </div>
+
+        <!-- REPORTS TAB -->
+        <div class="tab-pane" id="reports">
+            <div style="margin-bottom: 24px;">
+                <h3 style="margin: 0 0 16px; color: var(--green); font-weight: 700;">Analytics Summary</h3>
+            </div>
+
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <h3 class="chart-title">
+                        <i class="bi bi-pie-chart"></i> Stock Distribution by Category
+                    </h3>
+                    <canvas id="categoryDistributionChart" height="300"></canvas>
+                </div>
+
+                <div class="chart-card">
+                    <h3 class="chart-title">
+                        <i class="bi bi-boxes"></i> Inventory Summary
+                    </h3>
+                    <table class="stat-table">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Total Items in Stock</td>
+                                <td><strong>{{ $charts['total_items_count'] ?? 0 }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Total Stock Value</td>
+                                <td><strong>${{ number_format($charts['total_stock_value'] ?? 0, 0) }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Items in Low Stock</td>
+                                <td><span class="badge badge-warning">{{ $charts['low_stock_count'] ?? 0 }}</span></td>
+                            </tr>
+                            <tr>
+                                <td>Out of Stock Items</td>
+                                <td><span class="badge badge-danger">{{ $charts['out_of_stock_count'] ?? 0 }}</span></td>
+                            </tr>
+                            <tr>
+                                <td>Active Warehouses</td>
+                                <td><strong>{{ count($charts['warehouse_utilization'] ?? []) }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td>Average Warehouse Utilization</td>
+                                <td><strong>{{ number_format(collect($charts['warehouse_utilization'] ?? [])->avg('utilization'), 1) }}%</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Detailed Report -->
+            <div class="chart-card" style="margin-top: 24px;">
+                <h3 class="chart-title">
+                    <i class="bi bi-file-text"></i> Detailed Metrics
+                </h3>
+                <div style="overflow-x: auto;">
+                    <table class="stat-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Items</th>
+                                <th>Value</th>
+                                <th>Avg Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($charts['category_summary'] ?? [] as $cat)
+                                <tr>
+                                    <td>{{ $cat['name'] }}</td>
+                                    <td>{{ $cat['count'] }}</td>
+                                    <td>${{ number_format($cat['value'], 0) }}</td>
+                                    <td>${{ number_format($cat['avg_price'], 2) }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" style="text-align: center; color: #999;">No category data available</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
 @push('scripts')
-<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Stock Value Trend Chart
-    const stockValueData = @json($charts['stock_value_trend']);
-    const stockValueCtx = document.getElementById('stockValueChart').getContext('2d');
-    new Chart(stockValueCtx, {
-        type: 'line',
-        data: {
-            labels: stockValueData.labels,
-            datasets: [{
-                label: 'Stock Value ($)',
-                data: stockValueData.values,
-                borderColor: '#03624C',
-                backgroundColor: 'rgba(3, 98, 76, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4,
-                pointBackgroundColor: '#03624C',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    mode: 'index',
-                    intersect: false,
-                    callbacks: {
-                        label: function(context) {
-                            return `$${context.parsed.y.toFixed(2)}`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        drawBorder: false
-                    },
-                    ticks: {
-                        callback: function(value) {
-                            return '$' + value;
-                        }
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            }
-        }
-    });
-    
-    // Category Distribution Chart
-    const categoryData = @json($charts['category_distribution']);
-    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
-    new Chart(categoryCtx, {
-        type: 'doughnut',
-        data: {
-            labels: categoryData.labels,
-            datasets: [{
-                data: categoryData.values,
-                backgroundColor: [
-                    '#03624C', '#0fb9b1', '#4facfe', '#ff6b6b', '#ffd93d',
-                    '#6b5b95', '#88d8b0', '#ffaaa5', '#a8e6cf', '#dcedc1'
-                ],
-                borderWidth: 1,
-                borderColor: '#fff'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 20,
-                        usePointStyle: true,
-                        pointStyle: 'circle'
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.parsed || 0;
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = Math.round((value / total) * 100);
-                            return `${label}: ${value} (${percentage}%)`;
-                        }
-                    }
-                }
-            }
-        }
+    // Initialize tabs
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+                
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.classList.remove('active');
+                });
+                
+                this.classList.add('active');
+                const pane = document.getElementById(tabName);
+                if (pane) pane.classList.add('active');
+                
+                localStorage.setItem('activeAnalyticsTab', tabName);
+            });
+        });
+        
+        const savedTab = localStorage.getItem('activeAnalyticsTab') || 'overview';
+        const savedButton = document.querySelector(`[data-tab="${savedTab}"]`);
+        if (savedButton) savedButton.click();
+
+        // Initialize Charts
+        initCharts();
     });
 
-    // Sales Trend Chart
-    const salesTrendData = @json($charts['sales_trend']);
-    const salesTrendCtx = document.getElementById('salesTrendChart').getContext('2d');
-    new Chart(salesTrendCtx, {
-        type: 'bar',
-        data: {
-            labels: salesTrendData.labels,
-            datasets: [{
-                label: 'Sales Quantity',
-                data: salesTrendData.values,
-                backgroundColor: 'rgba(40, 167, 69, 0.2)',
-                borderColor: '#28a745',
-                borderWidth: 2,
-                borderRadius: 6,
-                borderSkipped: false,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        drawBorder: false
-                    },
-                    ticks: {
-                        precision: 0
-                    }
+    function initCharts() {
+        // Stock Value Trend
+        const stockValueData = @json($charts['stock_value_trend'] ?? []);
+        if (document.getElementById('stockValueChart') && stockValueData.labels) {
+            new Chart(document.getElementById('stockValueChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: stockValueData.labels || [],
+                    datasets: [{
+                        label: 'Stock Value ($)',
+                        data: stockValueData.values || [],
+                        borderColor: '#03624C',
+                        backgroundColor: 'rgba(3, 98, 76, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#03624C',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4
+                    }]
                 },
-                x: {
-                    grid: {
-                        display: false
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { drawBorder: false } },
+                        x: { grid: { display: false } }
                     }
                 }
-            }
+            });
         }
-    });
+
+        // Category Distribution
+        const categoryData = @json($charts['category_distribution'] ?? []);
+        if (document.getElementById('categoryChart') && categoryData.labels) {
+            new Chart(document.getElementById('categoryChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: categoryData.labels || [],
+                    datasets: [{
+                        data: categoryData.values || [],
+                        backgroundColor: ['#03624C', '#0fb9b1', '#4facfe', '#ff6b6b', '#ffd93d', '#6b5b95'],
+                        borderWidth: 1,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        // Sales Trend
+        const salesTrendData = @json($charts['sales_trend'] ?? []);
+        if (document.getElementById('salesTrendChart') && salesTrendData.labels) {
+            new Chart(document.getElementById('salesTrendChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: salesTrendData.labels || [],
+                    datasets: [{
+                        label: 'Sales',
+                        data: salesTrendData.values || [],
+                        backgroundColor: 'rgba(3, 98, 76, 0.2)',
+                        borderColor: '#03624C',
+                        borderWidth: 2,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true }, x: { grid: { display: false } } }
+                }
+            });
+        }
+    }
 </script>
 @endpush
 
-@push('styles')
-<style>
-    .card {
-        transition: transform 0.2s;
-    }
-    
-    .card:hover {
-        transform: translateY(-2px);
-    }
-    
-    .progress {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    
-    .progress-bar {
-        border-radius: 10px;
-    }
-    
-    .table-hover tbody tr:hover {
-        background-color: rgba(0, 0, 0, 0.02);
-    }
-    
-    .badge {
-        font-weight: 500;
-    }
-</style>
-@endpush
 @endsection

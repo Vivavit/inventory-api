@@ -6,20 +6,23 @@ use App\Models\InventoryLocation;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Models\Category;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $products = Product::with(['inventoryLocations'])->get();
+        $products = Product::with(['inventoryLocations', 'category'])->get();
 
         $totalStock = 0;
         $outOfStock = 0;
         $lowOnStock = 0;
+        $totalValue = 0;
 
         foreach ($products as $product) {
             $stock = $product->total_stock;
             $totalStock += $stock;
+            $totalValue += $stock * ($product->cost_price ?? 0);
 
             if ($stock <= 0) {
                 $outOfStock++;
@@ -33,7 +36,8 @@ class DashboardController extends Controller
             'total_warehouses' => Warehouse::where('is_active', true)->count(),
             'total_staff' => User::where('user_type', 'staff')->where('is_active', true)->count(),
             'low_stock_items' => $lowOnStock,
-            'total_inventory_value' => $this->getInventoryValue(),
+            'total_inventory_value' => number_format($totalValue, 2),
+            'total_sales_count' => Product::sum('sold_count') ?? 0,
         ];
 
         $recentProducts = Product::with('inventoryLocations')
@@ -50,14 +54,80 @@ class DashboardController extends Controller
             ->where('is_active', true)
             ->get();
 
+        $users = User::latest()->take(5)->get();
+        $totalUsers = User::count();
+        $activeUsers = User::where('is_active', true)->count();
+        $newUsersLast30 = User::where('created_at', '>=', now()->subDays(30))->count();
+
+        $topSellingProducts = Product::with('inventoryLocations')
+            ->where('sold_count', '>', 0)
+            ->orderByDesc('sold_count')
+            ->take(8)
+            ->get()
+            ->map(function ($product) {
+                $product->total_stock = $product->inventoryLocations->sum('quantity');
+                return $product;
+            });
+
+        $lowStockProducts = Product::with('inventoryLocations')
+            ->get()
+            ->map(function ($product) {
+                $product->total_stock = $product->inventoryLocations->sum('quantity');
+                return $product;
+            })
+            ->filter(function ($product) {
+                return $product->total_stock > 0 && $product->total_stock <= 10;
+            })
+            ->sortBy('total_stock')
+            ->take(5);
+
+        // Analytics data for charts
+        $productsByCategory = $this->getProductsByCategory();
+        $stockByWarehouse = $this->getStockByWarehouse();
+        $stockStatusDistribution = [
+            'In Stock' => $stats['total_products'] - $outOfStock,
+            'Low Stock' => $lowOnStock,
+            'Out of Stock' => $outOfStock,
+        ];
+
         return view('dashboard.index', compact(
             'stats',
             'recentProducts',
             'warehouses',
             'totalStock',
             'outOfStock',
-            'lowOnStock'
+            'lowOnStock',
+            'users',
+            'totalUsers',
+            'activeUsers',
+            'newUsersLast30',
+            'topSellingProducts',
+            'lowStockProducts',
+            'productsByCategory',
+            'stockByWarehouse',
+            'stockStatusDistribution'
         ));
+    }
+
+    private function getProductsByCategory()
+    {
+        $categories = Category::withCount('products')->get();
+        $data = [];
+        foreach ($categories as $cat) {
+            $data[$cat->name] = $cat->products_count;
+        }
+        return $data;
+    }
+
+    private function getStockByWarehouse()
+    {
+        $warehouses = Warehouse::with('inventoryLocations')->where('is_active', true)->get();
+        $data = [];
+        foreach ($warehouses as $warehouse) {
+            $stock = $warehouse->inventoryLocations->sum('quantity');
+            $data[$warehouse->name] = $stock;
+        }
+        return $data;
     }
 
     private function getInventoryValue()
