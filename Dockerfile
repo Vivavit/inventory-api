@@ -3,7 +3,7 @@ FROM php:8.2-cli
 RUN apt-get update && apt-get install -y \
     git curl zip unzip libzip-dev libpng-dev \
     libonig-dev libxml2-dev default-mysql-client \
-    libicu-dev g++ \
+    libicu-dev g++ nodejs npm \
     && docker-php-ext-configure intl \
     && docker-php-ext-install \
         pdo pdo_mysql mbstring zip exif pcntl bcmath gd intl \
@@ -17,7 +17,13 @@ COPY composer.json composer.lock ./
 
 RUN composer install --no-dev --no-scripts --no-autoloader --ignore-platform-reqs
 
+COPY package.json package-lock.json ./
+
+RUN npm install
+
 COPY . .
+
+RUN npm run build
 
 RUN composer dump-autoload --optimize --ignore-platform-reqs
 
