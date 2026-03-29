@@ -15,7 +15,7 @@ WORKDIR /var/www
 
 COPY composer.json composer.lock ./
 
-RUN composer install --no-dev --no-scripts --no-autoloader --ignore-platform-reqs
+RUN composer install --no-dev --no-scripts --no-autoloader
 
 COPY package.json package-lock.json ./
 
@@ -25,7 +25,7 @@ COPY . .
 
 RUN npm run build
 
-RUN composer dump-autoload --optimize --ignore-platform-reqs
+RUN composer dump-autoload --optimize
 
 COPY ca.pem /var/www/ca.pem
 
