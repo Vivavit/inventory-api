@@ -27,15 +27,19 @@ class CategorySeeder extends Seeder
         ];
 
         foreach ($categories as $index => $category) {
-            Category::create([
-                'name' => $category['name'],
-                'slug' => \Illuminate\Support\Str::slug($category['name']),
-                'description' => $category['description'],
-                'is_active' => true,
-                'sort_order' => $index,
-                'meta_title' => $category['name'] . ' - Shop Online',
-                'meta_description' => $category['description'],
-            ]);
+            Category::updateOrCreate(
+                [
+                    'slug' => \Illuminate\Support\Str::slug($category['name']), // unique key
+                ],
+                [
+                    'name' => $category['name'],
+                    'description' => $category['description'],
+                    'is_active' => true,
+                    'sort_order' => $index,
+                    'meta_title' => $category['name'] . ' - Shop Online',
+                    'meta_description' => $category['description'],
+                ]
+            );
         }
 
         $this->command->info('Categories created successfully!');
