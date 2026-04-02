@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Brand;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class BrandSeeder extends Seeder
 {
@@ -21,14 +22,16 @@ class BrandSeeder extends Seeder
         ];
 
         foreach ($brands as $index => $brandName) {
-            Brand::create([
-                'name' => $brandName,
-                'slug' => \Illuminate\Support\Str::slug($brandName),
-                'description' => "Quality products from {$brandName}",
-                'website' => "https://www.{$brandName}.com",
-                'is_active' => true,
-                'sort_order' => $index,
-            ]);
+            Brand::updateOrCreate(
+                ['slug' => Str::slug($brandName)], // unique key to match on
+                [
+                    'name'        => $brandName,
+                    'description' => "Quality products from {$brandName}",
+                    'website'     => "https://www.{$brandName}.com",
+                    'is_active'   => true,
+                    'sort_order'  => $index,
+                ]
+            );
         }
 
         $this->command->info('Brands created successfully!');
