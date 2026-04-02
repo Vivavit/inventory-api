@@ -13,7 +13,7 @@ echo "==> Running migrations..."
 php artisan migrate --force
 
 echo "==> Checking if seeding is needed..."
-USER_COUNT=$(php -r "require 'vendor/autoload.php'; echo \App\Models\User::count();" 2>/dev/null)
+USER_COUNT=$(php artisan tinker --execute="\App\Models\User::count();" 2>/dev/null)
 
 if [ "$USER_COUNT" = "0" ] || [ -z "$USER_COUNT" ]; then
     echo "==> Seeding database..."
