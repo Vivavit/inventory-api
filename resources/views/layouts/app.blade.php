@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <title>@yield('title','Inventory')</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     @vite(['resources/js/app.js'])
 
 
@@ -99,7 +102,7 @@
             color: white;
             padding: var(--spacing-lg) 0;
             transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 1000;
+            z-index: 100;
             overflow-y: auto;
             overflow-x: hidden;
         }
@@ -234,7 +237,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 var(--spacing-lg);
-            z-index: 950;
+            z-index: 90;
             gap: var(--spacing-lg);
             transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -349,7 +352,7 @@
             transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             min-height: calc(100vh - var(--header-height));
             position: relative;
-            z-index: 10;
+            z-index: auto;
             background: radial-gradient(circle at top left, #e9fffa, #f7faf9);
             padding: var(--spacing-2xl);
         }

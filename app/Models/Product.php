@@ -85,6 +85,10 @@ class Product extends Model
 
     public function getTotalStockAttribute()
     {
+        // Use eager loaded relation if available to avoid N+1 queries
+        if ($this->relationLoaded('warehouseProducts')) {
+            return $this->warehouseProducts->sum('quantity');
+        }
         return $this->warehouseProducts()->sum('quantity');
     }
 

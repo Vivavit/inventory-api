@@ -18,11 +18,15 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::with(['category', 'brand', 'inventoryLocations'])
+        $products = Product::with(['category', 'brand', 'inventoryLocations', 'warehouseProducts'])
             ->latest()
             ->paginate(20);
 
-        return view('products.index', compact('products'));
+        $categories = Category::all();
+        $brands = Brand::all();
+        $warehouses = Warehouse::all();
+
+        return view('products.index', compact('products', 'categories', 'brands', 'warehouses'));
     }
 
     public function create()
@@ -65,8 +69,8 @@ class ProductController extends Controller
         $validated['slug'] = Str::slug($validated['name']).'-'.Str::random(6);
 
         // Set default values
-        $validated['manage_stock'] = $request->has('manage_stock') ? 1 : 1;
-        $validated['is_active'] = $request->has('is_active') ? 1 : 1;
+        $validated['manage_stock'] = $request->has('manage_stock') ? 1 : 0;
+        $validated['is_active'] = $request->has('is_active') ? 1 : 0;
         $validated['is_featured'] = $request->has('is_featured') ? 1 : 0;
         $validated['has_variants'] = false;
 
@@ -132,12 +136,8 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
-        $product->load(['category', 'brand', 'variants', 'images', 'inventoryLocations.warehouse']);
+        $product->load(['category', 'brand', 'variants', 'images', 'warehouseProducts.warehouse']);
         $warehouses = Warehouse::all();
-
-        // Calculate total stock
-        $totalStock = InventoryLocation::where('product_id', $product->id)->sum('quantity');
-        $product->total_stock = $totalStock;
 
         return view('products.show', compact('product', 'warehouses'));
     }
@@ -148,6 +148,10 @@ class ProductController extends Controller
         $brands = Brand::all();
         $warehouses = Warehouse::all();
         $product->load(['inventoryLocations', 'images']);
+
+        if (request()->ajax()) {
+        return response()->json($product->load('category'));
+        }
 
         return view('products.edit', compact('product', 'categories', 'brands', 'warehouses'));
     }
@@ -389,6 +393,12 @@ class ProductController extends Controller
         Log::info('Product update completed successfully');
 
         return redirect()->route('products.index')->with('success', 'Product updated successfully!');
+    }
+
+    public function getForModal(Product $product)
+    {
+        $product->load(['category', 'brand', 'inventoryLocations', 'images']);
+        return response()->json($product);
     }
 
     public function destroy(Product $product)

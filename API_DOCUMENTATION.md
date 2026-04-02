@@ -85,10 +85,13 @@ Authorization: Bearer {token}
 - `PUT /permissions/{id}` - Update permission
 - `DELETE /permissions/{id}` - Delete permission
 
-### Product Management
-- `POST /products` - Create product (Permission: `create_products`)
-- `PUT /products/{id}` - Update product (Permission: `edit_products`)
-- `DELETE /products/{id}` - Delete product (Permission: `delete_products`)
+### Product Management (Permission: `manage-products`)
+- `POST /api/products` - Create product
+- `GET /api/products/{id}` - Get single product
+- `PUT /api/products/{id}` - Update product
+- `DELETE /api/products/{id}` - Delete product
+
+**Note:** The mobile app should use the `/api/v1` prefix or configure the base URL accordingly.
 
 ### Category Management
 - `POST /categories` - Create category (Permission: `create_categories`)

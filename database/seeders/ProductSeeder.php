@@ -9,6 +9,7 @@ use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\InventoryLocation;
 use App\Models\Warehouse;
+use App\Models\WarehouseProduct;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -102,21 +103,24 @@ class ProductSeeder extends Seeder
                 ]
             );
 
-            // Only create related data if product was just created
-            if ($product->wasRecentlyCreated) {
-                // Create product image
-                ProductImage::firstOrCreate(
-                    ['product_id' => $product->id, 'is_primary' => true],
-                    [
-                        'image_path' => 'products/default.jpg',
-                        'alt_text' => $product->name,
-                        'is_primary' => true,
-                        'sort_order' => 0,
-                    ]
-                );
+            // Always create/update product images (6 images per product)
+            // First, delete existing images to avoid duplicates
+            $product->images()->delete();
 
-                // Create variants if product has variants
-                if ($product->has_variants) {
+            // Create 6 product images using the existing image files in storage
+            $imageFiles = ['img_1.jpg', 'img_2.png', 'img_3.png', 'img_4.png', 'img_5.jpg', 'img_6.jpg'];
+            foreach ($imageFiles as $index => $imageFile) {
+                ProductImage::create([
+                    'product_id' => $product->id,
+                    'image_path' => 'products/' . $imageFile,
+                    'alt_text' => $product->name . ' - Image ' . ($index + 1),
+                    'is_primary' => $index === 0, // First image is primary
+                    'sort_order' => $index,
+                ]);
+            }
+
+            // Create variants if product has variants
+            if ($product->has_variants) {
                     $colors = ['Black', 'Silver', 'White'];
                     foreach ($colors as $colorIndex => $color) {
                         // Generate unique variant SKU
@@ -171,6 +175,19 @@ class ProductSeeder extends Seeder
                         );
                     }
                 }
+
+            // Sync WarehouseProduct quantities to reflect inventory location totals
+            foreach ($warehouses as $warehouse) {
+                $totalQty = InventoryLocation::where('product_id', $product->id)
+                    ->where('warehouse_id', $warehouse->id)
+                    ->sum('quantity');
+                WarehouseProduct::updateOrCreate(
+                    [
+                        'warehouse_id' => $warehouse->id,
+                        'product_id' => $product->id,
+                    ],
+                    ['quantity' => $totalQty]
+                );
             }
 
             $bar->advance();

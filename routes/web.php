@@ -59,7 +59,13 @@ Route::middleware('auth')->group(function () {
     | Products
     |--------------------------------------------------------------------------
     */
-    Route::resource('products', ProductController::class);
+    Route::middleware('permission:view-products')->group(function () {
+        Route::resource('products', ProductController::class)->only(['index', 'show']);
+    });
+    Route::middleware('permission:manage-products')->group(function () {
+        Route::resource('products', ProductController::class)->except(['index', 'show']);
+    });
+    Route::get('products/{product}/modal', [ProductController::class, 'getForModal'])->name('products.modal');
 
     /*
     |--------------------------------------------------------------------------

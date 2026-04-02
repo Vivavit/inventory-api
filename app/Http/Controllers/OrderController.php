@@ -26,7 +26,7 @@ class OrderController extends Controller
     public function create()
     {
         $warehouses = \App\Models\Warehouse::all();
-        $products = \App\Models\Product::with('inventoryLocations')->where('is_active', true)->get();
+        $products = \App\Models\Product::with(['inventoryLocations', 'warehouseProducts'])->where('is_active', true)->get();
 
         return view('orders.create', compact('warehouses', 'products'));
     }

@@ -12,7 +12,7 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $products = Product::with(['inventoryLocations', 'category'])->get();
+        $products = Product::with(['warehouseProducts', 'category'])->get();
 
         $totalStock = 0;
         $outOfStock = 0;
@@ -40,15 +40,10 @@ class DashboardController extends Controller
             'total_sales_count' => Product::sum('sold_count') ?? 0,
         ];
 
-        $recentProducts = Product::with('inventoryLocations')
+        $recentProducts = Product::with(['warehouseProducts', 'images'])
             ->latest()
             ->take(5)
-            ->get()
-            ->map(function ($product) {
-                $product->total_stock = $product->inventoryLocations->sum('quantity');
-
-                return $product;
-            });
+            ->get();
 
         $warehouses = Warehouse::withCount('inventoryLocations')
             ->where('is_active', true)
@@ -59,22 +54,14 @@ class DashboardController extends Controller
         $activeUsers = User::where('is_active', true)->count();
         $newUsersLast30 = User::where('created_at', '>=', now()->subDays(30))->count();
 
-        $topSellingProducts = Product::with('inventoryLocations')
+        $topSellingProducts = Product::with(['warehouseProducts', 'images'])
             ->where('sold_count', '>', 0)
             ->orderByDesc('sold_count')
             ->take(8)
-            ->get()
-            ->map(function ($product) {
-                $product->total_stock = $product->inventoryLocations->sum('quantity');
-                return $product;
-            });
+            ->get();
 
-        $lowStockProducts = Product::with('inventoryLocations')
+        $lowStockProducts = Product::with('warehouseProducts')
             ->get()
-            ->map(function ($product) {
-                $product->total_stock = $product->inventoryLocations->sum('quantity');
-                return $product;
-            })
             ->filter(function ($product) {
                 return $product->total_stock > 0 && $product->total_stock <= 10;
             })

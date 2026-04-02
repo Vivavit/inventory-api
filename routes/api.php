@@ -16,16 +16,19 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/me', [AuthController::class, 'me']);
 
-    // PRODUCTS (ADMIN ONLY)
+    // PRODUCTS (ADMIN ONLY - Full CRUD)
     Route::middleware('permission:manage-products')->group(function () {
         Route::post('/products', [ProductApiController::class, 'store']);
+        Route::get('/products/{product}', [ProductApiController::class, 'show']);
+        Route::put('/products/{product}', [ProductApiController::class, 'update']);
+        Route::delete('/products/{product}', [ProductApiController::class, 'destroy']);
     });
 
     Route::get('/health', function () {
         return response()->json(['status' => 'ok']);
     });
 
-    // inventory
+    // Products list (read-only, accessible to all authenticated users)
     Route::get('/products', [ProductApiController::class, 'index']);
 
     // warehouses
