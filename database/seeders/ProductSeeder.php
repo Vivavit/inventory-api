@@ -26,6 +26,11 @@ class ProductSeeder extends Seeder
             return;
         }
 
+        if (Product::count() > 0) {
+            $this->command->info('Products already seeded, skipping.');
+            return;
+        }
+
         $sampleProducts = [
             [
                 'name'        => 'Laptop Dell XPS 15',
