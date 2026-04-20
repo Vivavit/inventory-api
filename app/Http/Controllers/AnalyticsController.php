@@ -2,539 +2,407 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Category;
-use App\Models\InventoryLocation;
-use App\Models\InventoryTransaction;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\Warehouse;
-use App\Models\WarehouseProduct;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class AnalyticsController extends Controller
 {
+    /**
+     * Display the analytics dashboard.
+     */
     public function index(Request $request)
     {
-        $metrics = [
-            'inventory_turnover'   => $this->calculateInventoryTurnover(),
-            'stock_out_rate'       => $this->getStockOutRate(),
-            'average_stock_value'  => $this->getInventoryValue(),
-            'low_stock_alert_count'=> $this->getLowStockCount(),
-            'fast_moving_items'    => $this->getFastMovingItems(),
-            'slow_moving_items'    => $this->getSlowMovingItems(),
-            'total_sales_today'    => $this->getTotalSalesToday(),
-            'total_sales_month'    => $this->getTotalSalesMonth(),
-            'total_sales_year'     => $this->getTotalSalesYear(),
-            'out_of_stock_count'   => $this->getOutOfStockCount(),
-        ];
-
-        $charts = [
-            'stock_value_trend'      => $this->getStockValueTrend(),
-            'category_distribution'  => $this->getCategoryDistribution(),
-            'warehouse_utilization'  => $this->getWarehouseUtilization(),
-            'sales_trend'            => $this->getSalesTrend(),
-        ];
-
-        return view('analytics.index', [
-            'metrics' => $metrics,
-            'charts'  => $charts,
-            'period'  => $request->get('period', 'day'),
-        ]);
+        return view('analytics.index');
     }
 
-    // -------------------------------------------------------------------------
-    // PRIVATE HELPERS
-    // -------------------------------------------------------------------------
-
-    private function calculateInventoryTurnover()
+    /**
+     * API endpoint for analytics data.
+     * 
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function data(Request $request): JsonResponse
     {
-        // TODO: implement real COGS / average inventory calculation
-        return 1.5;
-    }
-
-    private function getStockOutRate()
-    {
-        $totalProducts = Product::count();
-        $outOfStock    = $this->getOutOfStockCount();
-
-        return $totalProducts > 0 ? round(($outOfStock / $totalProducts) * 100, 1) : 0;
-    }
-
-    private function getInventoryValue(): float
-    {
-        $value = DB::table('inventory_locations')
-            ->join('products', 'products.id', '=', 'inventory_locations.product_id')
-            ->sum(DB::raw('inventory_locations.quantity * COALESCE(products.cost_price, 0)'));
-
-        return (float) $value;
-    }
-
-    private function getLowStockCount(): int
-    {
-        return Product::whereHas('inventoryLocations', function ($q) {
-            $q->where('quantity', '>', 0)
-              ->where('quantity', '<=', 10);
-        })->count();
-    }
-
-    private function getOutOfStockCount(): int
-    {
-        // Use a single aggregating query instead of PHP-level chunking
-        return (int) Product::whereDoesntHave('inventoryLocations', function ($q) {
-            $q->where('quantity', '>', 0);
-        })->count();
-    }
-
-    private function getFastMovingItems()
-    {
-        return collect([]);
-    }
-
-    private function getSlowMovingItems()
-    {
-        return collect([]);
-    }
-
-    private function getStockValueTrend(): array
-    {
-        return [
-            'labels' => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            'values' => [10000, 12000, 11000, 13000, 12500, 14000, 15000],
-        ];
-    }
-
-    private function getCategoryDistribution(): array
-    {
-        $categories = Category::withCount('products')->get();
-
-        return [
-            'labels' => $categories->pluck('name'),
-            'values' => $categories->pluck('products_count'),
-        ];
-    }
-
-    private function getWarehouseUtilization()
-    {
-        return Warehouse::withCount('inventoryLocations')
-            ->get()
-            ->map(function ($warehouse) {
-                $totalCapacity   = $warehouse->capacity ?? 100;
-                $usedCapacity    = $warehouse->inventory_locations_count;
-                $utilization     = $totalCapacity > 0
-                    ? min(100, ($usedCapacity / $totalCapacity) * 100)
-                    : 0;
-
-                $warehouse->used_capacity  = $usedCapacity;
-                $warehouse->total_capacity = $totalCapacity;
-                $warehouse->utilization    = round($utilization, 1);
-                $warehouse->item_count     = $usedCapacity;
-
-                return $warehouse;
-            });
-    }
-
-    private function getTotalSalesToday()
-    {
-        $tx = InventoryTransaction::where('type', 'sale')
-            ->whereDate('created_at', today())
-            ->sum(DB::raw('ABS(quantity_change)'));
-
-        return $tx ?: Product::sum('sold_count');
-    }
-
-    private function getTotalSalesMonth()
-    {
-        $tx = InventoryTransaction::where('type', 'sale')
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
-            ->sum(DB::raw('ABS(quantity_change)'));
-
-        return $tx ?: Product::sum('sold_count');
-    }
-
-    private function getTotalSalesYear()
-    {
-        $tx = InventoryTransaction::where('type', 'sale')
-            ->whereYear('created_at', now()->year)
-            ->sum(DB::raw('ABS(quantity_change)'));
-
-        return $tx ?: Product::sum('sold_count');
-    }
-
-    private function getTotalSalesWeek()
-    {
-        $tx = InventoryTransaction::where('type', 'sale')
-            ->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])
-            ->sum(DB::raw('ABS(quantity_change)'));
-
-        return $tx ?: Product::sum('sold_count');
-    }
-
-    private function getSalesTrend(): array
-    {
-        $hasTx = InventoryTransaction::where('type', 'sale')->exists();
-        $sales  = [];
-
-        for ($i = 6; $i >= 0; $i--) {
-            $date = now()->subDays($i)->toDateString();
-
-            if ($hasTx) {
-                $sales[] = (int) InventoryTransaction::where('type', 'sale')
-                    ->whereDate('created_at', $date)
-                    ->sum(DB::raw('ABS(quantity_change)'));
-            } else {
-                $sales[] = (int) round(Product::sum('sold_count') / 7);
-            }
+        $period = $request->get('period', 'month');
+        $allowedPeriods = ['day', 'week', 'month', 'year'];
+        
+        if (!in_array($period, $allowedPeriods)) {
+            return response()->json(['error' => 'Invalid period'], 422);
         }
 
-        return [
-            'labels' => ['6 days ago', '5 days ago', '4 days ago', '3 days ago', '2 days ago', 'Yesterday', 'Today'],
-            'values' => $sales,
-        ];
-    }
-
-    private function getInStockCount(): int
-    {
-        return Product::whereHas('inventoryLocations', fn ($q) => $q->where('quantity', '>', 0))->count();
-    }
-
-    private function getTotalRevenue(): float
-    {
-        // Single DB-level aggregation; avoids loading all rows into memory
-        $revenue = (float) DB::table('inventory_transactions')
-            ->join('products', 'products.id', '=', 'inventory_transactions.product_id')
-            ->where('inventory_transactions.type', 'sale')
-            ->sum(DB::raw('ABS(inventory_transactions.quantity_change) * COALESCE(products.price, 0)'));
-
-        if ($revenue == 0) {
-            $revenue = (float) Product::sum(DB::raw('sold_count * price'));
-        }
-
-        return $revenue;
-    }
-
-    private function getTotalInventoryItems()
-    {
-        return InventoryLocation::sum('quantity');
-    }
-
-    private function getAverageStockLevel(): float
-    {
-        return round((float) InventoryLocation::avg('quantity'), 2);
-    }
-
-    private function getExpiringSoonCount(): int
-    {
-        return 0; // TODO: implement expiry tracking
-    }
-
-    private function getFillRate(): float
-    {
-        $totalProducts = Product::count();
-        $inStock       = $this->getInStockCount();
-
-        return $totalProducts > 0 ? round(($inStock / $totalProducts) * 100, 1) : 0;
-    }
-
-    private function getCategoryValue(int $categoryId): float
-    {
-        return (float) DB::table('products')
-            ->join('inventory_locations', 'inventory_locations.product_id', '=', 'products.id')
-            ->where('products.category_id', $categoryId)
-            ->sum(DB::raw('inventory_locations.quantity * COALESCE(products.cost_price, 0)'));
-    }
-
-    private function getTopProductsByValue(int $limit = 5)
-    {
-        return Product::with('inventoryLocations')
-            ->get()
-            ->map(function ($product) {
-                $totalQuantity = $product->inventoryLocations->sum('quantity');
-
-                return [
-                    'id'         => $product->id,
-                    'name'       => $product->name,
-                    'quantity'   => $totalQuantity,
-                    'value'      => $totalQuantity * $product->cost_price,
-                    'cost_price' => $product->cost_price,
-                ];
-            })
-            ->sortByDesc('value')
-            ->take($limit)
-            ->values();
-    }
-
-    private function warehouseId(): int
-    {
-        return request('warehouse_id') ?? auth()->user()->warehouse_id;
-    }
-
-    // -------------------------------------------------------------------------
-    // PUBLIC API ENDPOINTS
-    // -------------------------------------------------------------------------
-
-    public function getSummary(Request $request)
-    {
-        return response()->json([
-            'in_stock'            => $this->getInStockCount(),
-            'out_of_stock'        => $this->getOutOfStockCount(),
-            'low_stock'           => $this->getLowStockCount(),
-            'total_products'      => Product::count(),
-            'average_stock_value' => $this->getInventoryValue(),
-            'total_sales_today'   => $this->getTotalSalesToday(),
-            'total_sales_month'   => $this->getTotalSalesMonth(),
-            'total_sales_year'    => $this->getTotalSalesYear(),
-            'total_revenue'       => $this->getTotalRevenue(),
-        ]);
-    }
-
-    public function getSalesChart(Request $request)
-    {
-        $days = $request->get('period', 'week') === 'week' ? 7 : 30;
-        $data = [];
-
-        for ($i = $days - 1; $i >= 0; $i--) {
-            $date  = now()->subDays($i)->toDateString();
-            $sales = (float) InventoryTransaction::where('type', 'sale')
-                ->whereDate('created_at', $date)
-                ->sum(DB::raw('ABS(quantity_change)'));
-
-            if ($sales == 0) {
-                $sales = (float) DB::table('products')
-                    ->whereDate('updated_at', $date)
-                    ->sum('sold_count');
-            }
-
-            $data[] = ['label' => date('d M', strtotime($date)), 'value' => $sales, 'date' => $date];
-        }
+        // Cache for 5 minutes
+        $cacheKey = "analytics:{$period}";
+        
+        $data = Cache::remember($cacheKey, 300, function () use ($period) {
+            [$startDate, $endDate] = $this->getDateRange($period);
+            
+            return [
+                'kpis' => $this->getKPIs($startDate, $endDate),
+                'stock_value_trend' => $this->getStockValueTrend($period, $startDate, $endDate),
+                'category_distribution' => $this->getCategoryDistribution(),
+                'sales_trend' => $this->getSalesTrend($period, $startDate, $endDate),
+                'monthly_performance' => $this->getMonthlyPerformance(),
+                'category_momentum' => $this->getCategoryMomentum(),
+                'warehouse' => $this->getWarehouseData(),
+                'top_products' => $this->getTopProducts($startDate, $endDate),
+                'low_stock' => $this->getLowStockItems(),
+                'category_summary' => $this->getCategorySummary(),
+            ];
+        });
 
         return response()->json($data);
     }
 
-    public function getTrending(Request $request)
+    /**
+     * Get date range for specified period.
+     */
+    private function getDateRange(string $period): array
     {
-        $products = Product::with('category')
-            ->where('sold_count', '>', 0)
-            ->orderBy('sold_count', 'desc')
-            ->limit(10)
-            ->get(['id', 'name', 'sold_count', 'price', 'cost_price', 'category_id'])
-            ->map(fn ($p) => [
-                'id'       => $p->id,
-                'name'     => $p->name,
-                'sold'     => $p->sold_count,
-                'revenue'  => $p->sold_count * $p->price,
-                'profit'   => ($p->price - $p->cost_price) * $p->sold_count,
-                'category' => $p->category->name ?? 'Uncategorized',
-            ]);
-
-        return response()->json($products);
+        $now = Carbon::now();
+        
+        $start = match ($period) {
+            'day' => $now->copy()->startOfDay(),
+            'week' => $now->copy()->startOfWeek(),
+            'month' => $now->copy()->startOfMonth(),
+            'year' => $now->copy()->startOfYear(),
+        };
+        
+        return [$start, $now];
     }
 
     /**
-     * Comprehensive metrics for dashboard / mobile / admin.
-     * (Merged the two duplicate getMetrics methods into one.)
+     * Get date format for grouping.
      */
-    public function getMetrics(Request $request)
+    private function getGroupFormat(string $period): string
     {
-        $wid = $this->warehouseId();
-
-        return response()->json([
-            'inventory' => [
-                'total_value'         => $this->getInventoryValue(),
-                'total_items'         => $this->getTotalInventoryItems(),
-                'average_stock_level' => $this->getAverageStockLevel(),
-                // Warehouse-scoped totals
-                'warehouse_items'     => WarehouseProduct::where('warehouse_id', $wid)->sum('quantity'),
-                'warehouse_value'     => WarehouseProduct::where('warehouse_id', $wid)
-                    ->join('products', 'products.id', '=', 'warehouse_products.product_id')
-                    ->sum(DB::raw('warehouse_products.quantity * COALESCE(products.cost_price, 0)')),
-            ],
-            'sales' => [
-                'today'      => (float) Order::where('warehouse_id', $wid)->whereDate('created_at', today())->sum(DB::raw('ABS(total)')),
-                'this_week'  => $this->getTotalSalesWeek(),
-                'this_month' => (float) Order::where('warehouse_id', $wid)->whereMonth('created_at', now()->month)->sum(DB::raw('ABS(total)')),
-                'this_year'  => $this->getTotalSalesYear(),
-            ],
-            'alerts' => [
-                'out_of_stock'  => WarehouseProduct::where('warehouse_id', $wid)->where('quantity', 0)->count(),
-                'low_stock'     => WarehouseProduct::where('warehouse_id', $wid)->whereBetween('quantity', [1, 10])->count(),
-                'expiring_soon' => $this->getExpiringSoonCount(),
-            ],
-            'performance' => [
-                'inventory_turnover' => $this->calculateInventoryTurnover(),
-                'stock_out_rate'     => $this->getStockOutRate(),
-                'fill_rate'          => $this->getFillRate(),
-            ],
-        ]);
+        return match ($period) {
+            'day' => '%H:00',
+            'week' => '%a',
+            'month' => '%d %b',
+            'year' => '%b',
+        };
     }
 
-    public function getInventoryStats()
+    /**
+     * Calculate KPI metrics.
+     */
+    private function getKPIs(Carbon $start, Carbon $end): array
     {
-        $categories = Category::withCount('products')
-            ->orderBy('products_count', 'desc')
+        // Average stock value per product
+        $avgStockValue = DB::table('warehouse_products')
+            ->join('products', 'products.id', '=', 'warehouse_products.product_id')
+            ->where('products.is_active', true)
+            ->avg(DB::raw('products.price * warehouse_products.quantity')) ?? 0;
+
+        // Low stock items (current stock <= threshold)
+        $lowStockCount = DB::table('warehouse_products')
+            ->join('products', 'products.id', '=', 'warehouse_products.product_id')
+            ->where('products.is_active', true)
+            ->whereRaw('warehouse_products.quantity > 0 AND warehouse_products.quantity <= products.default_low_stock_threshold')
+            ->distinct('warehouse_products.product_id')
+            ->count('warehouse_products.product_id');
+
+        // Out of stock items
+        $outOfStockCount = DB::table('warehouse_products')
+            ->join('products', 'products.id', '=', 'warehouse_products.product_id')
+            ->where('products.is_active', true)
+            ->where('warehouse_products.quantity', '<=', 0)
+            ->distinct('warehouse_products.product_id')
+            ->count('warehouse_products.product_id');
+
+        // Sales today
+        $salesToday = DB::table('orders')
+            ->where('orders.status', 'completed')
+            ->whereDate('orders.created_at', Carbon::today())
+            ->sum('orders.total') ?? 0;
+
+        // Sales this month
+        $salesMonth = DB::table('orders')
+            ->where('orders.status', 'completed')
+            ->whereMonth('orders.created_at', Carbon::now()->month)
+            ->whereYear('orders.created_at', Carbon::now()->year)
+            ->sum('orders.total') ?? 0;
+
+        // Sales this year
+        $salesYear = DB::table('orders')
+            ->where('orders.status', 'completed')
+            ->whereYear('orders.created_at', Carbon::now()->year)
+            ->sum('orders.total') ?? 0;
+
+        return [
+            'average_stock_value' => round($avgStockValue, 2),
+            'low_stock_alert_count' => $lowStockCount,
+            'out_of_stock_count' => $outOfStockCount,
+            'total_sales_today' => round($salesToday, 2),
+            'total_sales_month' => round($salesMonth, 2),
+            'total_sales_year' => round($salesYear, 2),
+        ];
+    }
+
+    /**
+     * Get stock value trend data.
+     */
+    private function getStockValueTrend(string $period, Carbon $start, Carbon $end): array
+    {
+        $format = $this->getGroupFormat($period);
+        
+        // Calculate daily stock value snapshots
+        $rows = DB::table('warehouse_products')
+            ->join('products', 'products.id', '=', 'warehouse_products.product_id')
+            ->select(DB::raw("DATE_FORMAT(warehouse_products.updated_at, '{$format}') as label"))
+            ->selectRaw('AVG(products.price * warehouse_products.quantity) as value')
+            ->where('products.is_active', true)
+            ->whereBetween('warehouse_products.updated_at', [$start, $end])
+            ->groupBy('label')
+            ->orderBy(DB::raw('MIN(warehouse_products.updated_at)'))
+            ->get();
+
+        return [
+            'labels' => $rows->pluck('label')->toArray(),
+            'values' => $rows->pluck('value')->map(fn($v) => round($v, 2))->toArray(),
+        ];
+    }
+
+    /**
+     * Get category distribution data.
+     */
+    private function getCategoryDistribution(): array
+    {
+        $rows = DB::table('products')
+            ->join('categories', 'products.category_id', '=', 'categories.id')
+            ->where('products.is_active', true)
+            ->select('categories.name as label')
+            ->selectRaw('COUNT(products.id) as value')
+            ->groupBy('categories.id', 'categories.name')
+            ->orderByDesc('value')
             ->limit(8)
-            ->get()
-            ->map(fn ($c) => [
-                'name'  => $c->name,
-                'count' => $c->products_count,
-                'value' => $this->getCategoryValue($c->id),
-            ]);
+            ->get();
 
-        $warehouses = Warehouse::withCount('inventoryLocations')
-            ->get()
-            ->map(function ($warehouse) {
-                $totalCapacity = $warehouse->capacity ?? 1000;
-                $usedCapacity  = $warehouse->inventory_locations_count;
-                $utilization   = $totalCapacity > 0
-                    ? min(100, ($usedCapacity / $totalCapacity) * 100)
-                    : 0;
+        return [
+            'labels' => $rows->pluck('label')->toArray(),
+            'values' => $rows->pluck('value')->toArray(),
+        ];
+    }
 
+    /**
+     * Get sales trend data.
+     */
+    private function getSalesTrend(string $period, Carbon $start, Carbon $end): array
+    {
+        $format = $this->getGroupFormat($period);
+        
+        $rows = DB::table('orders')
+            ->select(DB::raw("DATE_FORMAT(created_at, '{$format}') as label"))
+            ->selectRaw('SUM(total) as value')
+            ->where('status', 'completed')
+            ->whereBetween('created_at', [$start, $end])
+            ->groupBy('label')
+            ->orderBy(DB::raw('MIN(created_at)'))
+            ->get();
+
+        return [
+            'labels' => $rows->pluck('label')->toArray(),
+            'values' => $rows->pluck('value')->map(fn($v) => round($v, 2))->toArray(),
+        ];
+    }
+
+    /**
+     * Get monthly performance data (last 12 months).
+     */
+    private function getMonthlyPerformance(): array
+    {
+        $rows = DB::table('orders')
+            ->select(DB::raw("DATE_FORMAT(created_at, '%b %Y') as label"))
+            ->selectRaw('SUM(total) as value')
+            ->where('status', 'completed')
+            ->where('created_at', '>=', Carbon::now()->subMonths(11)->startOfMonth())
+            ->groupBy(DB::raw('YEAR(created_at)'), DB::raw('MONTH(created_at)'))
+            ->orderBy(DB::raw('MIN(created_at)'))
+            ->get();
+
+        return [
+            'labels' => $rows->pluck('label')->toArray(),
+            'values' => $rows->pluck('value')->map(fn($v) => round($v, 2))->toArray(),
+        ];
+    }
+
+    /**
+     * Get category momentum (growth percentage).
+     */
+    private function getCategoryMomentum(): array
+    {
+        $currentMonth = Carbon::now()->startOfMonth();
+        $lastMonth = Carbon::now()->subMonth()->startOfMonth();
+        $endOfLastMonth = $currentMonth->copy()->subSecond();
+
+        $currentSales = DB::table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->join('products', 'products.id', '=', 'order_items.product_id')
+            ->join('categories', 'categories.id', '=', 'products.category_id')
+            ->where('orders.status', 'completed')
+            ->where('orders.created_at', '>=', $currentMonth)
+            ->groupBy('categories.id', 'categories.name')
+            ->select('categories.name')
+            ->selectRaw('SUM(order_items.subtotal) as total')
+            ->pluck('total', 'name');
+
+        $lastMonthSales = DB::table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->join('products', 'products.id', '=', 'order_items.product_id')
+            ->join('categories', 'categories.id', '=', 'products.category_id')
+            ->where('orders.status', 'completed')
+            ->whereBetween('orders.created_at', [$lastMonth, $endOfLastMonth])
+            ->groupBy('categories.id', 'categories.name')
+            ->select('categories.name')
+            ->selectRaw('SUM(order_items.subtotal) as total')
+            ->pluck('total', 'name');
+
+        $labels = [];
+        $values = [];
+
+        foreach ($currentSales as $category => $current) {
+            $previous = $lastMonthSales[$category] ?? 0;
+            $labels[] = $category;
+            
+            if ($previous == 0) {
+                $values[] = $current > 0 ? 100 : 0;
+            } else {
+                $values[] = round((($current - $previous) / $previous) * 100, 1);
+            }
+        }
+
+        return compact('labels', 'values');
+    }
+
+    /**
+     * Get warehouse utilization data.
+     */
+    private function getWarehouseData(): array
+    {
+        $warehouses = DB::table('warehouses')
+            ->leftJoin('warehouse_products', 'warehouses.id', '=', 'warehouse_products.warehouse_id')
+            ->select(
+                'warehouses.id',
+                'warehouses.name',
+                DB::raw('COALESCE(SUM(warehouse_products.quantity), 0) as items')
+            )
+            ->groupBy('warehouses.id', 'warehouses.name')
+            ->get();
+
+        $rows = $warehouses->map(function ($wh) {
+            // Assume typical warehouse capacity of 1000 units for demo
+            $capacity = 1000;
+            $utilization = $capacity > 0 
+                ? round(($wh->items / $capacity) * 100, 1) 
+                : 0;
+            
+            return [
+                'id' => $wh->id,
+                'name' => $wh->name,
+                'capacity' => (int) $capacity,
+                'items' => (int) $wh->items,
+                'utilization' => min($utilization, 100),
+            ];
+        });
+
+        return [
+            'rows' => $rows->toArray(),
+            'chart' => [
+                'labels' => $rows->pluck('name')->toArray(),
+                'capacity' => $rows->pluck('capacity')->toArray(),
+                'used' => $rows->pluck('items')->toArray(),
+            ],
+        ];
+    }
+
+    /**
+     * Get top performing products.
+     */
+    private function getTopProducts(Carbon $start, Carbon $end): array
+    {
+        return DB::table('order_items')
+            ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->join('products', 'products.id', '=', 'order_items.product_id')
+            ->where('orders.status', 'completed')
+            ->whereBetween('orders.created_at', [$start, $end])
+            ->select(
+                'products.name',
+                DB::raw('SUM(order_items.quantity) as sales'),
+                DB::raw('SUM(order_items.subtotal) as value')
+            )
+            ->groupBy('products.id', 'products.name')
+            ->orderByDesc('value')
+            ->limit(10)
+            ->get()
+            ->map(function ($product) {
                 return [
-                    'id'             => $warehouse->id,
-                    'name'           => $warehouse->name,
-                    'utilization'    => round($utilization, 1),
-                    'used_capacity'  => $usedCapacity,
-                    'total_capacity' => $totalCapacity,
-                    'status'         => $utilization > 80 ? 'Overutilized'
-                                      : ($utilization > 60 ? 'Moderate' : 'Optimal'),
+                    'name' => $product->name,
+                    'sales' => (int) $product->sales,
+                    'value' => round($product->value, 2),
                 ];
-            });
-
-        return response()->json([
-            'categories'            => $categories,
-            'warehouses'            => $warehouses,
-            'total_inventory_value' => $this->getInventoryValue(),
-            'top_products'          => $this->getTopProductsByValue(5),
-        ]);
+            })
+            ->toArray();
     }
 
-    public function dashboard()
+    /**
+     * Get low stock items.
+     */
+    private function getLowStockItems(): array
     {
-        $wid = $this->warehouseId();
-
-        return response()->json([
-            'total_sales' => round(Order::where('warehouse_id', $wid)->sum('total'), 2),
-            'total_stock' => WarehouseProduct::where('warehouse_id', $wid)->sum('quantity'),
-            'out_of_stock'=> WarehouseProduct::where('warehouse_id', $wid)->where('quantity', 0)->count(),
-            'low_stock'   => WarehouseProduct::where('warehouse_id', $wid)->whereBetween('quantity', [1, 10])->count(),
-        ]);
+        return DB::table('warehouse_products')
+            ->join('products', 'products.id', '=', 'warehouse_products.product_id')
+            ->where('products.is_active', true)
+            ->whereRaw('warehouse_products.quantity <= products.default_low_stock_threshold')
+            ->select(
+                'products.name',
+                DB::raw('SUM(warehouse_products.quantity) as current'),
+                'products.default_low_stock_threshold as threshold'
+            )
+            ->groupBy('products.id', 'products.name', 'products.default_low_stock_threshold')
+            ->orderBy('current')
+            ->limit(20)
+            ->get()
+            ->map(fn($item) => [
+                'name' => $item->name,
+                'current' => (int) $item->current,
+                'threshold' => (int) $item->threshold,
+            ])
+            ->toArray();
     }
 
-    public function summary()
+    /**
+     * Get category summary with stock health.
+     */
+    private function getCategorySummary(): array
     {
-        $wid = $this->warehouseId();
-
-        return response()->json([
-            'in_stock'    => WarehouseProduct::where('warehouse_id', $wid)->where('quantity', '>', 0)->count(),
-            'out_of_stock'=> WarehouseProduct::where('warehouse_id', $wid)->where('quantity', 0)->count(),
-            'low_stock'   => WarehouseProduct::where('warehouse_id', $wid)->whereBetween('quantity', [1, 10])->count(),
-        ]);
-    }
-
-    public function salesChart()
-    {
-        $wid    = $this->warehouseId();
-        $period = request('period', 'week');
-
-        if ($period === 'week') {
-            $start  = Carbon::now()->startOfWeek();
-            $orders = Order::where('warehouse_id', $wid)
-                ->whereBetween('created_at', [$start, Carbon::now()->endOfWeek()])
-                ->selectRaw('DATE(created_at) as date, SUM(total) as total')
-                ->groupBy('date')
-                ->pluck('total', 'date');
-
-            $data = [];
-            for ($i = 0; $i < 7; $i++) {
-                $date   = $start->copy()->addDays($i);
-                $data[] = ['label' => $date->format('D'), 'value' => $orders[$date->format('Y-m-d')] ?? 0];
-            }
-
-            return response()->json($data);
-        }
-
-        if ($period === 'month') {
-            $start       = Carbon::now()->startOfMonth();
-            $daysInMonth = $start->daysInMonth;
-            $dailyOrders = Order::where('warehouse_id', $wid)
-                ->whereBetween('created_at', [$start, Carbon::now()->endOfMonth()])
-                ->selectRaw('DATE(created_at) as date, SUM(total) as total')
-                ->groupBy('date')
-                ->pluck('total', 'date');
-
-            $data = [];
-            for ($week = 1; $week <= 5; $week++) {
-                $weekStartDay = ($week - 1) * 7 + 1;
-                $weekEndDay   = min($week * 7, $daysInMonth);
-                $total        = 0.0;
-
-                for ($day = $weekStartDay; $day <= $weekEndDay; $day++) {
-                    $total += $dailyOrders[$start->copy()->day($day)->format('Y-m-d')] ?? 0;
-                }
-
-                $data[] = ['label' => "W$week", 'value' => $total];
-
-                if ($weekEndDay === $daysInMonth) {
-                    break;
-                }
-            }
-
-            return response()->json($data);
-        }
-
-        return response()->json([]);
-    }
-
-    public function trending()
-    {
-        $wid = $this->warehouseId();
-
-        return response()->json(
-            WarehouseProduct::where('warehouse_id', $wid)
-                ->with('product')
-                ->orderBy('sold_count', 'desc')
-                ->limit(5)
-                ->get()
-                ->map(fn ($wp) => [
-                    'id'   => $wp->product->id,
-                    'name' => $wp->product->name,
-                    'sold' => $wp->sold_count ?? 0,
-                ])
-        );
-    }
-
-    public function orderAnalytics()
-    {
-        $wid    = $this->warehouseId();
-        $orders = Order::where('warehouse_id', $wid)
-            ->with(['user:id,name', 'warehouse:id,name'])
-            ->latest()
-            ->get(['id', 'user_id', 'warehouse_id', 'total', 'status', 'created_at']);
-
-        return response()->json([
-            'orders'        => $orders,
-            'total_orders'  => $orders->count(),
-            'total_revenue' => round(Order::where('warehouse_id', $wid)->sum('total'), 2),
-        ]);
-    }
-
-    public function productAnalytics(int $productId)
-    {
-        $wid              = $this->warehouseId();
-        $product          = Product::findOrFail($productId);
-        $warehouseProduct = WarehouseProduct::where('warehouse_id', $wid)
-            ->where('product_id', $productId)
-            ->first();
-
-        return response()->json([
-            'product_id'   => $product->id,
-            'product_name' => $product->name,
-            'price'        => $product->price,
-            'sold'         => $warehouseProduct->sold_count ?? 0,
-            'stock'        => $warehouseProduct->quantity ?? 0,
-            'revenue'      => round(($warehouseProduct->sold_count ?? 0) * $product->price, 2),
-        ]);
+        return DB::table('products')
+            ->join('categories', 'products.category_id', '=', 'categories.id')
+            ->leftJoin('warehouse_products', 'products.id', '=', 'warehouse_products.product_id')
+            ->where('products.is_active', true)
+            ->select(
+                'categories.name',
+                DB::raw('COUNT(DISTINCT products.id) as products'),
+                DB::raw('SUM(products.price * warehouse_products.quantity) as value'),
+                DB::raw('AVG(products.price) as avg_price'),
+                DB::raw('AVG(CASE WHEN warehouse_products.quantity > products.default_low_stock_threshold THEN 100 
+                     WHEN warehouse_products.quantity > 0 THEN 50 
+                     ELSE 0 END) as stock_health')
+            )
+            ->groupBy('categories.id', 'categories.name')
+            ->orderByDesc('value')
+            ->get()
+            ->map(fn($cat) => [
+                'name' => $cat->name,
+                'products' => (int) $cat->products,
+                'value' => round($cat->value ?? 0, 2),
+                'avg_price' => round($cat->avg_price ?? 0, 2),
+                'stock_health' => round($cat->stock_health ?? 0, 1),
+            ])
+            ->toArray();
     }
 }

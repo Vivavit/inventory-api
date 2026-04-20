@@ -47,15 +47,13 @@ class AuthController extends Controller
 
         $token = $user->createToken('flutter-token')->plainTextToken;
 
+        $userData = $user->toArray();
+        $userData['permissions'] = $user->getAllPermissions()->pluck('name')->toArray();
+
         $response = [
             'success' => true,
             'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'user_type' => $user->user_type,
-            ],
+            'user' => $userData,
             'message' => 'Login successful',
         ];
 
@@ -95,17 +93,18 @@ class AuthController extends Controller
         $user = $request->user();
         $warehouses = $user->warehouses;
 
-        $response = [
-            'success' => true,
-            'user' => $user,
-        ];
+        $userData = $user->toArray();
+        $userData['permissions'] = $user->getAllPermissions()->pluck('name')->toArray();
 
         if ($user->isAdmin()) {
-            $response['warehouses'] = $warehouses;
+            $userData['warehouses'] = $warehouses;
         } else {
-            $response['warehouse'] = $warehouses->first();
+            $userData['warehouse'] = $warehouses->first();
         }
 
-        return response()->json($response);
+        return response()->json([
+            'success' => true,
+            'user' => $userData,
+        ]);
     }
 }

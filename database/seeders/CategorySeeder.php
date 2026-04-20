@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Category;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class CategorySeeder extends Seeder
@@ -36,7 +35,7 @@ class CategorySeeder extends Seeder
                     'description' => $category['description'],
                     'is_active' => true,
                     'sort_order' => $index,
-                    'meta_title' => $category['name'] . ' - Shop Online',
+                    'meta_title' => $category['name'].' - Shop Online',
                     'meta_description' => $category['description'],
                 ]
             );

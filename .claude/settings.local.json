@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(php:*)"
+      "Bash(grep -l \"inventory_locations\\\\|warehouse_products\" \"D:\\\\Sana_school\\\\laravel_backend_inventory\\\\database\\\\migrations\"/*.php)",
+      "Bash(xargs grep:*)",
+      "Bash(php:*)",
+      "Bash(./vendor/bin/pint --test)",
+      "Bash(ls -la .env*)",
+      "Bash(./vendor/bin/pint:*)",
+      "Bash(ls database/migrations/*product_image*.php)"
     ]
   }
 }

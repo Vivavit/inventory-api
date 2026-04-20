@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('warehouse_id')->constrained()->cascadeOnDelete();
             $table->boolean('is_default')->default(false);
             $table->timestamps();
-            
+
             // Prevent duplicate assignments
             $table->unique(['user_id', 'warehouse_id']);
         });

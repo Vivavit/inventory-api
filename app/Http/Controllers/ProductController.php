@@ -150,7 +150,7 @@ class ProductController extends Controller
         $product->load(['inventoryLocations', 'images']);
 
         if (request()->ajax()) {
-        return response()->json($product->load('category'));
+            return response()->json($product->load('category'));
         }
 
         return view('products.edit', compact('product', 'categories', 'brands', 'warehouses'));
@@ -398,6 +398,7 @@ class ProductController extends Controller
     public function getForModal(Product $product)
     {
         $product->load(['category', 'brand', 'inventoryLocations', 'images']);
+
         return response()->json($product);
     }
 

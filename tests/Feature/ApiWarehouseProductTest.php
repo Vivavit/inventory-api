@@ -25,8 +25,8 @@ class ApiWarehouseProductTest extends TestCase
 
         $product = Product::factory()->create(['is_active' => true]);
 
-        WarehouseProduct::create([ 'warehouse_id' => $w1->id, 'product_id' => $product->id, 'quantity' => 5 ]);
-        WarehouseProduct::create([ 'warehouse_id' => $w2->id, 'product_id' => $product->id, 'quantity' => 10 ]);
+        WarehouseProduct::create(['warehouse_id' => $w1->id, 'product_id' => $product->id, 'quantity' => 5]);
+        WarehouseProduct::create(['warehouse_id' => $w2->id, 'product_id' => $product->id, 'quantity' => 10]);
 
         $admin = User::factory()->create(['user_type' => 'admin']);
         $admin->warehouses()->attach([$w1->id, $w2->id]);
@@ -36,7 +36,7 @@ class ApiWarehouseProductTest extends TestCase
         $response = $this->getJson('/api/products');
 
         $response->assertStatus(200)
-            ->assertJson([ 'success' => true ])
+            ->assertJson(['success' => true])
             ->assertJsonPath('data.0.stock', 15);
 
         // ensure warehouses metadata returned
@@ -54,8 +54,8 @@ class ApiWarehouseProductTest extends TestCase
 
         $product = Product::factory()->create(['is_active' => true]);
 
-        WarehouseProduct::create([ 'warehouse_id' => $w1->id, 'product_id' => $product->id, 'quantity' => 7 ]);
-        WarehouseProduct::create([ 'warehouse_id' => $w2->id, 'product_id' => $product->id, 'quantity' => 3 ]);
+        WarehouseProduct::create(['warehouse_id' => $w1->id, 'product_id' => $product->id, 'quantity' => 7]);
+        WarehouseProduct::create(['warehouse_id' => $w2->id, 'product_id' => $product->id, 'quantity' => 3]);
 
         $staff = User::factory()->create(['user_type' => 'staff']);
         $staff->warehouses()->attach([$w1->id]);
@@ -66,11 +66,11 @@ class ApiWarehouseProductTest extends TestCase
 
         // dump JSON for debugging if it fails
         if ($response->json('data.0.stock') !== 7) {
-            fwrite(STDERR, "API response: " . json_encode($response->json(), JSON_PRETTY_PRINT) . "\n");
+            fwrite(STDERR, 'API response: '.json_encode($response->json(), JSON_PRETTY_PRINT)."\n");
         }
 
         $response->assertStatus(200)
-            ->assertJson([ 'success' => true ])
+            ->assertJson(['success' => true])
             ->assertJsonPath('data.0.stock', 7)
             ->assertJsonPath('warehouse_id', $w1->id);
 

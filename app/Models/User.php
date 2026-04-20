@@ -124,5 +124,21 @@ class User extends Authenticatable
         return $query->where('user_type', 'staff');
     }
 
-    protected $guard_name = 'web';
+    /**
+     * Get the guard name for Spatie permissions.
+     * Uses the current authentication guard to support both web (session) and API (sanctum).
+     */
+    public function getGuardName(): string
+    {
+        // When authenticated via Sanctum (API), use 'sanctum' guard
+        // Otherwise fall back to 'web' for session-based auth
+        if (auth()->check()) {
+            $driver = auth()->getDefaultDriver();
+            if ($driver === 'sanctum' || $driver === 'web') {
+                return $driver;
+            }
+        }
+
+        return 'web';
+    }
 }

@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Brand;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -25,11 +24,11 @@ class BrandSeeder extends Seeder
             Brand::updateOrCreate(
                 ['slug' => Str::slug($brandName)], // unique key to match on
                 [
-                    'name'        => $brandName,
+                    'name' => $brandName,
                     'description' => "Quality products from {$brandName}",
-                    'website'     => "https://www.{$brandName}.com",
-                    'is_active'   => true,
-                    'sort_order'  => $index,
+                    'website' => "https://www.{$brandName}.com",
+                    'is_active' => true,
+                    'sort_order' => $index,
                 ]
             );
         }

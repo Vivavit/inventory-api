@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 class Category extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'name',
         'slug',
@@ -23,30 +24,34 @@ class Category extends Model
     ];
 
     #[Scope()]
-    protected function active(Builder $builder){
+    protected function active(Builder $builder)
+    {
         $builder->where('is_active', true);
     }
 
     #[Scope()]
-    protected function sorted(Builder $builder){
-        $builder->orderBy('sort_order','asc');
+    protected function sorted(Builder $builder)
+    {
+        $builder->orderBy('sort_order', 'asc');
     }
 
-    //relationship
-    public function products(){
+    // relationship
+    public function products()
+    {
         return $this->hasMany(Product::class);
     }
 
-    protected static function boot(){
+    protected static function boot()
+    {
         parent::boot();
 
-        static::creating(function($category){
+        static::creating(function ($category) {
             if (empty($category->slug)) {
                 $category->slug = Str::slug($category->name);
             }
         });
 
-        static::updating(function($category){
+        static::updating(function ($category) {
             if ($category->isDirty('name') && empty($category->empty)) {
                 $category->slug = Str::slug($category->name);
             }

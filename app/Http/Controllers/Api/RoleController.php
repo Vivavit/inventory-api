@@ -18,7 +18,7 @@ class RoleController extends Controller
     public function index(Request $request): JsonResponse
     {
         $roles = Role::with('permissions')->paginate(15);
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $roles,
@@ -31,13 +31,13 @@ class RoleController extends Controller
     public function store(StoreRoleRequest $request): JsonResponse
     {
         $role = Role::create($request->validated());
-        
+
         if ($request->has('permissions')) {
             $role->syncPermissions($request->permissions);
         }
-        
+
         $role->load('permissions');
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Role created successfully',
@@ -51,7 +51,7 @@ class RoleController extends Controller
     public function show(Role $role): JsonResponse
     {
         $role->load('permissions');
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $role,
@@ -73,13 +73,13 @@ class RoleController extends Controller
         }
 
         $role->update($request->validated());
-        
+
         if ($request->has('permissions')) {
             $role->syncPermissions($request->permissions);
         }
-        
+
         $role->load('permissions');
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Role updated successfully',
@@ -102,7 +102,7 @@ class RoleController extends Controller
         }
 
         $role->delete();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Role deleted successfully',

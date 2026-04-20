@@ -14,8 +14,8 @@ class UpdateBrandRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'string|max:255|unique:brands,name,' . $this->brand->id,
-            'slug' => 'string|unique:brands,slug,' . $this->brand->id,
+            'name' => 'string|max:255|unique:brands,name,'.$this->brand->id,
+            'slug' => 'string|unique:brands,slug,'.$this->brand->id,
             'description' => 'nullable|string',
             'logo' => 'nullable|string',
             'is_active' => 'boolean',

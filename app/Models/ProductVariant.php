@@ -55,9 +55,9 @@ class ProductVariant extends Model
     {
         parent::boot();
 
-        static::creating(function($variant) {
+        static::creating(function ($variant) {
             if (empty($variant->sku)) {
-                $variant->sku = 'VAR-'. strtoupper(Str::random(8));
+                $variant->sku = 'VAR-'.strtoupper(Str::random(8));
             }
         });
     }

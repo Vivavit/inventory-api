@@ -17,13 +17,13 @@ class PermissionController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Permission::query();
-        
+
         if ($request->has('search')) {
-            $query->where('name', 'like', '%' . $request->search . '%');
+            $query->where('name', 'like', '%'.$request->search.'%');
         }
-        
+
         $permissions = $query->paginate(15);
-        
+
         return response()->json([
             'status' => 'success',
             'data' => $permissions,
@@ -36,7 +36,7 @@ class PermissionController extends Controller
     public function store(StorePermissionRequest $request): JsonResponse
     {
         $permission = Permission::create($request->validated());
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Permission created successfully',
@@ -61,7 +61,7 @@ class PermissionController extends Controller
     public function update(UpdatePermissionRequest $request, Permission $permission): JsonResponse
     {
         $permission->update($request->validated());
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Permission updated successfully',
@@ -75,7 +75,7 @@ class PermissionController extends Controller
     public function destroy(Permission $permission): JsonResponse
     {
         $permission->delete();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Permission deleted successfully',

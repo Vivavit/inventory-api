@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\InventoryLocation;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Warehouse;
-use App\Models\Category;
 
 class DashboardController extends Controller
 {
@@ -103,6 +103,7 @@ class DashboardController extends Controller
         foreach ($categories as $cat) {
             $data[$cat->name] = $cat->products_count;
         }
+
         return $data;
     }
 
@@ -114,6 +115,7 @@ class DashboardController extends Controller
             $stock = $warehouse->inventoryLocations->sum('quantity');
             $data[$warehouse->name] = $stock;
         }
+
         return $data;
     }
 

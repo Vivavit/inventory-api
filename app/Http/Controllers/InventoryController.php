@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Product;
-use App\Models\Warehouse;
 use App\Models\InventoryLocation;
 use App\Models\InventoryTransaction;
+use App\Models\Product;
+use App\Models\Warehouse;
 use Illuminate\Http\Request;
 
 class InventoryController extends Controller
@@ -20,7 +20,7 @@ class InventoryController extends Controller
         ]);
 
         $warehouse = Warehouse::find($validated['warehouse_id']);
-        
+
         // Get or create inventory location
         $location = InventoryLocation::firstOrCreate(
             [
@@ -33,8 +33,8 @@ class InventoryController extends Controller
 
         // Calculate new quantity
         $quantityBefore = $location->quantity;
-        $quantityChange = $validated['type'] === 'addition' 
-            ? $validated['quantity'] 
+        $quantityChange = $validated['type'] === 'addition'
+            ? $validated['quantity']
             : -$validated['quantity'];
         $quantityAfter = max(0, $quantityBefore + $quantityChange);
 
@@ -71,7 +71,7 @@ class InventoryController extends Controller
             'warehouse_id' => $validated['from_warehouse_id'],
         ])->first();
 
-        if (!$sourceLocation || $sourceLocation->available_quantity < $validated['quantity']) {
+        if (! $sourceLocation || $sourceLocation->available_quantity < $validated['quantity']) {
             return redirect()->back()->with('error', 'Insufficient stock in source warehouse!');
         }
 
@@ -106,7 +106,7 @@ class InventoryController extends Controller
                 'quantity_before' => $sourceBefore,
                 'quantity_after' => $sourceAfter,
                 'user_id' => auth()->id(),
-                'notes' => $validated['notes'] . ' (Transfer to ' . $destLocation->warehouse->name . ')',
+                'notes' => $validated['notes'].' (Transfer to '.$destLocation->warehouse->name.')',
             ]);
 
             InventoryTransaction::create([
@@ -117,7 +117,7 @@ class InventoryController extends Controller
                 'quantity_before' => $destBefore,
                 'quantity_after' => $destAfter,
                 'user_id' => auth()->id(),
-                'notes' => $validated['notes'] . ' (Transfer from ' . $sourceLocation->warehouse->name . ')',
+                'notes' => $validated['notes'].' (Transfer from '.$sourceLocation->warehouse->name.')',
             ]);
         });
 

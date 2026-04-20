@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class Setting extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'key',
         'value',
@@ -23,12 +24,12 @@ class Setting extends Model
         $query->where('group', $group);
     }
 
-     // Helper Methods
+    // Helper Methods
     public static function get($key, $default = null)
     {
         $setting = static::where('key', $key)->first();
-        
-        if (!$setting) {
+
+        if (! $setting) {
             return $default;
         }
 
@@ -47,12 +48,12 @@ class Setting extends Model
         );
     }
 
-    protected static function castValue($value, $type){
+    protected static function castValue($value, $type)
+    {
         return match ($type) {
             'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
             'number' => is_numeric($value) ? (float) $value : $value,
             'json' => json_decode($value, true),
         };
     }
-
 }

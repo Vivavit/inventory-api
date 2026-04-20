@@ -1,0 +1,100 @@
+<?php
+
+namespace App\Filament\Resources;
+
+use App\Models\PurchaseOrder;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+
+class PurchaseOrderResource extends Resource
+{
+    protected static ?string $model = PurchaseOrder::class;
+
+    protected static ?string $recordTitleAttribute = 'po_number';
+
+    public static function form(\Filament\Forms\Form $form): \Filament\Forms\Form
+    {
+        return $form
+            ->schema([
+                \Filament\Forms\Components\TextInput::make('po_number')
+                    ->disabled()
+                    ->dehydrated()
+                    ->required(),
+                \Filament\Forms\Components\Select::make('supplier_id')
+                    ->relationship('supplier', 'name')
+                    ->required(),
+                \Filament\Forms\Components\Select::make('warehouse_id')
+                    ->relationship('warehouse', 'name'),
+                \Filament\Forms\Components\Select::make('status')
+                    ->options([
+                        'draft' => 'Draft',
+                        'pending' => 'Pending',
+                        'ordered' => 'Ordered',
+                        'partially_received' => 'Partially Received',
+                        'received' => 'Received',
+                        'cancelled' => 'Cancelled',
+                    ])
+                    ->default('draft'),
+                \Filament\Forms\Components\DatePicker::make('order_date')
+                    ->required(),
+                \Filament\Forms\Components\DatePicker::make('expected_delivery_date'),
+                \Filament\Forms\Components\TextInput::make('total_amount')
+                    ->numeric(),
+                \Filament\Forms\Components\Textarea::make('notes'),
+                \Filament\Forms\Components\Repeater::make('items')
+                    ->relationship()
+                    ->schema([
+                        \Filament\Forms\Components\Select::make('product_id')
+                            ->relationship('product', 'name')
+                            ->required(),
+                        \Filament\Forms\Components\TextInput::make('quantity')
+                            ->numeric()
+                            ->required()
+                            ->minValue(1),
+                        \Filament\Forms\Components\TextInput::make('unit_price')
+                            ->numeric()
+                            ->required(),
+                    ])
+                    ->columns(3),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('po_number')->searchable()->sortable(),
+                Tables\Columns\TextColumn::make('supplier.name')->sortable(),
+                Tables\Columns\TextColumn::make('warehouse.name')->sortable(),
+                Tables\Columns\BadgeColumn::make('status')
+                    ->colors([
+                        'gray' => 'draft',
+                        'warning' => 'pending',
+                        'info' => 'ordered',
+                        'success' => 'received',
+                        'danger' => 'cancelled',
+                    ]),
+                Tables\Columns\TextColumn::make('total_amount')->numeric(),
+                Tables\Columns\TextColumn::make('order_date')->date(),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => \App\Filament\Resources\PurchaseOrderResource\Pages\ListPurchaseOrders::class,
+            'create' => \App\Filament\Resources\PurchaseOrderResource\Pages\CreatePurchaseOrder::class,
+            'edit' => \App\Filament\Resources\PurchaseOrderResource\Pages\EditPurchaseOrder::class,
+        ];
+    }
+}

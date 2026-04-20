@@ -32,6 +32,7 @@ class PopulateOrderItems extends Command
 
         if ($orders->isEmpty()) {
             $this->info('No orders without items found.');
+
             return;
         }
 
@@ -39,10 +40,11 @@ class PopulateOrderItems extends Command
 
         if ($products->isEmpty()) {
             $this->error('No products found in database.');
+
             return;
         }
 
-        $this->info("Processing " . $orders->count() . " orders...");
+        $this->info('Processing '.$orders->count().' orders...');
 
         foreach ($orders as $order) {
             $remaining = $order->total;
@@ -56,7 +58,7 @@ class PopulateOrderItems extends Command
 
                 // If subtotal exceeds remaining, adjust quantity
                 if ($subtotal > $remaining) {
-                    $quantity = max(1, (int)floor($remaining / $price));
+                    $quantity = max(1, (int) floor($remaining / $price));
                     $subtotal = $quantity * $price;
                 }
 
@@ -74,9 +76,9 @@ class PopulateOrderItems extends Command
                 $itemCount++;
             }
 
-            $this->line("✓ Order #{$order->id} - " . OrderItem::where('order_id', $order->id)->count() . " items added");
+            $this->line("✓ Order #{$order->id} - ".OrderItem::where('order_id', $order->id)->count().' items added');
         }
 
-        $this->info("✓ All orders populated successfully!");
+        $this->info('✓ All orders populated successfully!');
     }
 }

@@ -23,10 +23,10 @@ class ReviewFactory extends Factory
         $customer = Customer::inRandomOrder()->first();
 
         // If no products or customers exist, create them
-        if (!$product) {
+        if (! $product) {
             $product = Product::factory()->create();
         }
-        if (!$customer) {
+        if (! $customer) {
             $customer = Customer::factory()->create();
         }
 

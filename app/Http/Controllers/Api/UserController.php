@@ -17,6 +17,7 @@ class UserController extends Controller
     public function index(): JsonResponse
     {
         $users = User::paginate(15);
+
         return response()->json([
             'status' => 'success',
             'data' => $users,
@@ -29,7 +30,7 @@ class UserController extends Controller
     public function store(StoreUserRequest $request): JsonResponse
     {
         $user = User::create($request->validated());
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'User created successfully',
@@ -54,7 +55,7 @@ class UserController extends Controller
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
         $user->update($request->validated());
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'User updated successfully',
@@ -68,7 +69,7 @@ class UserController extends Controller
     public function destroy(User $user): JsonResponse
     {
         $user->delete();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'User deleted successfully',

@@ -7,6 +7,8 @@ use App\Models\InventoryTransaction;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
+use App\Models\Warehouse;
+use App\Models\WarehouseProduct;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -18,21 +20,27 @@ class PurchaseOrderController extends Controller
             ->latest()
             ->paginate(20);
 
-        return view('purchase-orders.index', compact('orders'));
+        $suppliers = Supplier::where('is_active', true)->get();
+        $products = Product::where('is_active', true)->get();
+        $warehouses = Warehouse::where('is_active', true)->get();
+
+        return view('purchase-orders.index', compact('orders', 'suppliers', 'products', 'warehouses'));
     }
 
     public function create()
     {
         $suppliers = Supplier::where('is_active', true)->get();
         $products = Product::where('is_active', true)->get();
+        $warehouses = Warehouse::where('is_active', true)->get();
 
-        return view('purchase-orders.create', compact('suppliers', 'products'));
+        return view('purchase-orders.create', compact('suppliers', 'products', 'warehouses'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
+            'warehouse_id' => 'required|exists:warehouses,id',
             'order_date' => 'required|date',
             'expected_delivery_date' => 'nullable|date|after_or_equal:order_date',
             'notes' => 'nullable|string',
@@ -63,6 +71,7 @@ class PurchaseOrderController extends Controller
             $order = PurchaseOrder::create([
                 'po_number' => $poNumber,
                 'supplier_id' => $validated['supplier_id'],
+                'warehouse_id' => $validated['warehouse_id'],
                 'order_date' => $validated['order_date'],
                 'expected_delivery_date' => $validated['expected_delivery_date'] ?? null,
                 'notes' => $validated['notes'],
@@ -168,6 +177,18 @@ class PurchaseOrderController extends Controller
                             $item->unit_price
                         ),
                     ]);
+
+                    // Sync WarehouseProduct summary (used by Product::total_stock and stock checks)
+                    $totalQty = InventoryLocation::where('product_id', $item->product_id)
+                        ->where('warehouse_id', $validated['warehouse_id'])
+                        ->sum('quantity');
+                    WarehouseProduct::updateOrCreate(
+                        [
+                            'warehouse_id' => $validated['warehouse_id'],
+                            'product_id' => $item->product_id,
+                        ],
+                        ['quantity' => $totalQty]
+                    );
 
                     // Create transaction record
                     InventoryTransaction::create([

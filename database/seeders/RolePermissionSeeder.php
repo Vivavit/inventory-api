@@ -47,8 +47,8 @@ class RolePermissionSeeder extends Seeder
         }
 
         // --- ROLES ---
-        $adminWeb     = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-        $staffWeb     = Role::firstOrCreate(['name' => 'staff', 'guard_name' => 'web']);
+        $adminWeb = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+        $staffWeb = Role::firstOrCreate(['name' => 'staff', 'guard_name' => 'web']);
         $adminSanctum = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'sanctum']);
         $staffSanctum = Role::firstOrCreate(['name' => 'staff', 'guard_name' => 'sanctum']);
 

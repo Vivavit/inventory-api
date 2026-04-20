@@ -15,11 +15,11 @@ class UserSeeder extends Seeder
         $admin = User::firstOrCreate(
             ['email' => 'admin@inventory.com'],
             [
-                'name'              => 'Admin',
-                'password'          => Hash::make('123456789'),
-                'phone'             => '0977141801',
-                'user_type'         => 'admin',
-                'is_active'         => true,
+                'name' => 'Admin',
+                'password' => Hash::make('123456789'),
+                'phone' => '0977141801',
+                'user_type' => 'admin',
+                'is_active' => true,
                 'email_verified_at' => now(),
             ]
         );
@@ -28,11 +28,11 @@ class UserSeeder extends Seeder
         $staff1 = User::firstOrCreate(
             ['email' => 'staff1@inventory.com'],
             [
-                'name'              => 'Warehouse Staff 1',
-                'password'          => Hash::make('staff123'),
-                'phone'             => '0987654321',
-                'user_type'         => 'staff',
-                'is_active'         => true,
+                'name' => 'Warehouse Staff 1',
+                'password' => Hash::make('staff123'),
+                'phone' => '0987654321',
+                'user_type' => 'staff',
+                'is_active' => true,
                 'email_verified_at' => now(),
             ]
         );
@@ -40,11 +40,11 @@ class UserSeeder extends Seeder
         $staff2 = User::firstOrCreate(
             ['email' => 'staff2@inventory.com'],
             [
-                'name'              => 'Warehouse Staff 2',
-                'password'          => Hash::make('staff123'),
-                'phone'             => '0987654322',
-                'user_type'         => 'staff',
-                'is_active'         => true,
+                'name' => 'Warehouse Staff 2',
+                'password' => Hash::make('staff123'),
+                'phone' => '0987654322',
+                'user_type' => 'staff',
+                'is_active' => true,
                 'email_verified_at' => now(),
             ]
         );

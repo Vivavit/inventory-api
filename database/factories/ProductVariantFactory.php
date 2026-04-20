@@ -25,7 +25,7 @@ class ProductVariantFactory extends Factory
 
         return [
             'product_id' => Product::factory(),
-            'sku' => 'VAR-' . strtoupper(Str::random(8)),
+            'sku' => 'VAR-'.strtoupper(Str::random(8)),
             'name' => $name,
             'options' => json_encode(['color' => $color, 'size' => $size]),
             'price' => $price,

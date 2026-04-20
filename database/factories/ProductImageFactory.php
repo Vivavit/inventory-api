@@ -20,7 +20,7 @@ class ProductImageFactory extends Factory
         return [
             'product_id' => Product::factory(),
             'product_variant_id' => null,
-            'image_path' => 'products/placeholder-' . fake()->numberBetween(1, 5) . '.jpg',
+            'image_path' => 'products/placeholder-'.fake()->numberBetween(1, 5).'.jpg',
             'alt_text' => fake()->sentence(3),
             'is_primary' => false,
             'sort_order' => fake()->numberBetween(0, 10),
@@ -34,5 +34,4 @@ class ProductImageFactory extends Factory
             'sort_order' => 0,
         ]);
     }
-
 }

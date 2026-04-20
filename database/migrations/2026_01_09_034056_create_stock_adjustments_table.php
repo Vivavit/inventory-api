@@ -14,13 +14,13 @@ return new class extends Migration
             $table->foreignId('warehouse_id')->constrained()->cascadeOnDelete();
             $table->enum('type', ['addition', 'deduction', 'correction', 'write_off']);
             $table->enum('reason', [
-                'damaged', 
-                'expired', 
-                'found', 
-                'theft', 
-                'counting_error', 
+                'damaged',
+                'expired',
+                'found',
+                'theft',
+                'counting_error',
                 'quality_control',
-                'other'
+                'other',
             ])->default('other');
             $table->text('notes')->nullable();
             $table->enum('status', ['pending', 'approved', 'rejected', 'completed'])->default('pending');

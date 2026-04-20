@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class ProductImage extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'product_id',
         'product_variant_id',
@@ -18,6 +19,8 @@ class ProductImage extends Model
         'is_primary',
         'sort_order',
     ];
+
+    protected $appends = ['url'];
 
     protected function casts(): array
     {

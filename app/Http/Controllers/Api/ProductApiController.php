@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Brand;
-use App\Models\Category;
 use App\Models\InventoryLocation;
 use App\Models\Product;
 use App\Models\ProductImage;
@@ -22,31 +20,36 @@ class ProductApiController extends Controller
     {
         $user = $request->user();
 
+        // Get user's warehouses
         $warehouses = $user->warehouses()->get(['warehouses.id as id', 'warehouses.name', 'warehouses.code']);
         $warehouseIds = $warehouses->pluck('id')->toArray();
 
-        if (empty($warehouseIds)) {
+        if (empty($warehouseIds) && ! $user->isAdmin()) {
             return response()->json([
                 'success' => false,
                 'message' => 'No warehouse assigned to user. Contact administrator.',
             ], 403);
         }
 
-        $productsQuery = Product::whereHas('warehouseProducts', function ($query) use ($warehouseIds) {
-            $query->whereIn('warehouse_id', $warehouseIds);
-        })
-            ->with(['images' => function ($q) {
-                $q->where('is_primary', true);
-            }])
-            ->where('is_active', true);
+        // Build query
+        $productsQuery = Product::query()->with(['images' => function ($q) {
+            $q->where('is_primary', true);
+        }])->where('is_active', true);
 
-        $products = $productsQuery->get()->map(function ($product) use ($warehouseIds, $user) {
+        // For non-admin users, filter by their warehouses only
+        if (! $user->isAdmin() && ! empty($warehouseIds)) {
+            $productsQuery->whereHas('warehouseProducts', function ($query) use ($warehouseIds) {
+                $query->whereIn('warehouse_id', $warehouseIds);
+            });
+        }
+        // For admin users, show all products (no warehouse filter)
+
+        $products = $productsQuery->get()->map(function ($product) use ($warehouseIds, $user, $warehouses) {
             $primaryImage = $product->primaryImage;
             $imagePath = $primaryImage ? $primaryImage->image_path : 'products/default.jpg';
 
-            if (str_contains($imagePath, 'app/public/')) {
-                $imagePath = str_replace('app/public/', '', $imagePath);
-            }
+            // Normalize path: remove 'storage/' or 'public/' prefixes if present
+            $imagePath = preg_replace('/^(storage\/|public\/)/', '', $imagePath);
 
             $fullPath = public_path('storage/'.$imagePath);
             if (! file_exists($fullPath)) {
@@ -55,16 +58,22 @@ class ProductApiController extends Controller
 
             $imageUrl = url('storage/'.$imagePath);
 
+            // Calculate stock
             if ($user->isAdmin()) {
+                // Admin sees total stock across all warehouses
                 $stock = (int) DB::table('warehouse_products')
                     ->where('product_id', $product->id)
-                    ->whereIn('warehouse_id', $warehouseIds)
                     ->sum('quantity');
             } else {
-                $stock = (int) DB::table('warehouse_products')
-                    ->where('product_id', $product->id)
-                    ->where('warehouse_id', $warehouseIds[0])
-                    ->sum('quantity');
+                // Non-admin sees stock from their assigned warehouses only
+                if (empty($warehouseIds)) {
+                    $stock = 0;
+                } else {
+                    $stock = (int) DB::table('warehouse_products')
+                        ->where('product_id', $product->id)
+                        ->whereIn('warehouse_id', $warehouseIds)
+                        ->sum('quantity');
+                }
             }
 
             $item = [
@@ -74,10 +83,16 @@ class ProductApiController extends Controller
                 'price' => (float) $product->price,
                 'stock' => $stock,
                 'image' => $imageUrl,
+                'sku' => $product->sku,
+                'category' => $product->category ? $product->category->name : null,
+                'is_active' => (bool) $product->is_active,
+                'is_featured' => (bool) $product->is_featured,
             ];
 
-            if (! $user->isAdmin()) {
+            // Add warehouse info for non-admin users
+            if (! $user->isAdmin() && ! empty($warehouseIds)) {
                 $item['warehouse_id'] = $warehouseIds[0];
+                $item['warehouse_name'] = $warehouses->firstWhere('id', $warehouseIds[0])->name ?? null;
             }
 
             return $item;
@@ -88,13 +103,14 @@ class ProductApiController extends Controller
             'data' => $products,
         ];
 
+        // Add warehouses info for admin users
         if ($user->isAdmin()) {
             $response['warehouses'] = $warehouses;
             $response['warehouse_id'] = null;
             $response['warehouse_name'] = null;
-        } else {
+        } elseif (! empty($warehouseIds)) {
             $response['warehouse_id'] = $warehouseIds[0];
-            $response['warehouse_name'] = $warehouses->firstWhere('id', $warehouseIds[0])->name;
+            $response['warehouse_name'] = $warehouses->firstWhere('id', $warehouseIds[0])->name ?? null;
         }
 
         return response()->json($response);
@@ -102,6 +118,8 @@ class ProductApiController extends Controller
 
     public function store(Request $request)
     {
+        $user = $request->user();
+
         $this->validate($request, [
             'name' => 'required|string|max:255',
             'sku' => 'required|string|unique:products',
@@ -117,14 +135,18 @@ class ProductApiController extends Controller
             'manage_stock' => 'boolean',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
-            'images' => 'nullable|array|max:1',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'warehouse_stock' => 'nullable|array',
+            'warehouse_stock.*' => 'integer|min:0',
+            'location_code' => 'nullable|array',
+            'location_code.*' => 'string|max:50',
         ]);
 
         $validated = $request->only([
             'name', 'sku', 'category_id', 'brand_id', 'price', 'cost_price',
             'compare_price', 'description', 'short_description', 'weight',
-            'default_low_stock_threshold', 'manage_stock', 'is_active', 'is_featured',
+            'default_low_stock_threshold',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']).'-'.Str::random(6);
@@ -138,20 +160,20 @@ class ProductApiController extends Controller
         try {
             $product = Product::create($validated);
 
-            // Handle image upload
+            // Handle image upload(s)
             if ($request->hasFile('images')) {
-                $image = $request->file('images')[0];
+                foreach ($request->file('images') as $index => $image) {
+                    if ($image && $image->isValid()) {
+                        $imageName = time().'_'.Str::random(10).'.'.$image->getClientOriginalExtension();
+                        $path = $image->store('products', 'public');
 
-                if ($image->isValid()) {
-                    $imageName = time().'_'.Str::random(10).'.'.$image->getClientOriginalExtension();
-                    $path = $image->store('products', 'public');
-
-                    ProductImage::create([
-                        'product_id' => $product->id,
-                        'image_path' => $path,
-                        'is_primary' => true,
-                        'sort_order' => 0,
-                    ]);
+                        ProductImage::create([
+                            'product_id' => $product->id,
+                            'image_path' => $path,
+                            'is_primary' => $index === 0, // First image is primary
+                            'sort_order' => $index,
+                        ]);
+                    }
                 }
             }
 
@@ -161,7 +183,12 @@ class ProductApiController extends Controller
                     if ($quantity > 0) {
                         $locationCode = $request->location_code[$warehouseId] ?? null;
 
-                        InventoryLocation::create([
+                        // Validate warehouse access for admin/non-admin
+                        if (! $user->isAdmin() && ! in_array($warehouseId, $user->warehouses()->pluck('id')->toArray())) {
+                            continue; // Skip warehouses user doesn't have access to
+                        }
+
+                        $inventoryLocation = InventoryLocation::create([
                             'product_id' => $product->id,
                             'warehouse_id' => $warehouseId,
                             'quantity' => $quantity,
@@ -169,6 +196,7 @@ class ProductApiController extends Controller
                             'location_code' => $locationCode,
                         ]);
 
+                        // Update warehouse product summary
                         $totalQty = InventoryLocation::where('product_id', $product->id)
                             ->where('warehouse_id', $warehouseId)
                             ->sum('quantity');
@@ -185,7 +213,7 @@ class ProductApiController extends Controller
 
             DB::commit();
 
-            $product->load(['category', 'brand', 'images', 'warehouseProducts.warehouse']);
+            $product->load(['category', 'brand', 'images', 'warehouseProducts.warehouse', 'inventoryLocations']);
 
             return response()->json([
                 'success' => true,
@@ -207,19 +235,29 @@ class ProductApiController extends Controller
     public function show(Request $request, Product $product)
     {
         $user = $request->user();
-        $warehouses = $user->warehouses()->get(['warehouses.id as id', 'warehouses.name', 'warehouses.code']);
-        $warehouseIds = $warehouses->pluck('id')->toArray();
 
-        // Check if product exists in user's accessible warehouses
-        $hasAccess = $product->warehouseProducts()
-            ->whereIn('warehouse_id', $warehouseIds)
-            ->exists();
+        // Admin can see any product, others need warehouse access
+        if (! $user->isAdmin()) {
+            $warehouses = $user->warehouses()->get(['warehouses.id as id', 'warehouses.name', 'warehouses.code']);
+            $warehouseIds = $warehouses->pluck('id')->toArray();
 
-        if (! $hasAccess) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Product not found or you do not have access',
-            ], 404);
+            if (empty($warehouseIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No warehouse assigned to user. Contact administrator.',
+                ], 403);
+            }
+
+            $hasAccess = $product->warehouseProducts()
+                ->whereIn('warehouse_id', $warehouseIds)
+                ->exists();
+
+            if (! $hasAccess) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product not found or you do not have access',
+                ], 404);
+            }
         }
 
         $product->load([
@@ -231,18 +269,29 @@ class ProductApiController extends Controller
             'inventoryLocations',
         ]);
 
-        // Calculate stock for accessible warehouses
-        $stock = DB::table('warehouse_products')
-            ->where('product_id', $product->id)
-            ->whereIn('warehouse_id', $warehouseIds)
-            ->sum('quantity');
-
-        $productData = $product->toArray();
-        $productData['stock'] = (int) $stock;
+        // Calculate stock
+        $stockQuery = DB::table('warehouse_products')->where('product_id', $product->id);
 
         if (! $user->isAdmin()) {
-            $productData['warehouse_id'] = $warehouseIds[0];
-            $productData['warehouse_name'] = $warehouses->firstWhere('id', $warehouseIds[0])->name;
+            $warehouseIds = $user->warehouses()->pluck('id')->toArray();
+            if (! empty($warehouseIds)) {
+                $stockQuery->whereIn('warehouse_id', $warehouseIds);
+            }
+        }
+
+        $stock = (int) $stockQuery->sum('quantity');
+
+        $productData = $product->toArray();
+        $productData['stock'] = $stock;
+
+        // Add warehouse info for non-admin users
+        if (! $user->isAdmin()) {
+            $warehouseIds = $user->warehouses()->pluck('id')->toArray();
+            if (! empty($warehouseIds)) {
+                $firstWarehouse = $user->warehouses()->first();
+                $productData['warehouse_id'] = $warehouseIds[0];
+                $productData['warehouse_name'] = $firstWarehouse ? $firstWarehouse->name : null;
+            }
         }
 
         return response()->json([
@@ -253,6 +302,24 @@ class ProductApiController extends Controller
 
     public function update(Request $request, Product $product)
     {
+        $user = $request->user();
+
+        // Admin can update any product, others need warehouse access
+        if (! $user->isAdmin()) {
+            $warehouseIds = $user->warehouses()->pluck('id')->toArray();
+
+            $hasAccess = $product->warehouseProducts()
+                ->whereIn('warehouse_id', $warehouseIds)
+                ->exists();
+
+            if (! $hasAccess) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product not found or you do not have permission to update',
+                ], 404);
+            }
+        }
+
         $this->validate($request, [
             'name' => 'required|string|max:255',
             'sku' => 'required|string|unique:products,sku,'.$product->id,
@@ -268,12 +335,18 @@ class ProductApiController extends Controller
             'manage_stock' => 'boolean',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'warehouse_stock' => 'nullable|array',
+            'warehouse_stock.*' => 'integer|min:0',
+            'location_code' => 'nullable|array',
+            'location_code.*' => 'string|max:50',
         ]);
 
         $validated = $request->only([
             'name', 'sku', 'category_id', 'brand_id', 'price', 'cost_price',
             'compare_price', 'description', 'short_description', 'weight',
-            'default_low_stock_threshold', 'manage_stock', 'is_active', 'is_featured',
+            'default_low_stock_threshold',
         ]);
 
         $validated['manage_stock'] = $request->has('manage_stock') ? 1 : 0;
@@ -289,47 +362,43 @@ class ProductApiController extends Controller
         try {
             $product->update($validated);
 
-            // Handle new image upload
+            // Handle new image upload (replace existing images)
             if ($request->hasFile('images')) {
-                $files = $request->file('images');
-                $newImage = null;
-
-                if (is_array($files)) {
-                    foreach ($files as $file) {
-                        if ($file && $file->isValid()) {
-                            $newImage = $file;
-                            break;
-                        }
+                // Delete existing images
+                foreach ($product->images as $existingImage) {
+                    if (Storage::disk('public')->exists($existingImage->image_path)) {
+                        Storage::disk('public')->delete($existingImage->image_path);
                     }
-                } elseif ($files && $files->isValid()) {
-                    $newImage = $files;
+                    $existingImage->delete();
                 }
 
-                if ($newImage) {
-                    // Delete existing images
-                    foreach ($product->images as $existingImage) {
-                        if (Storage::disk('public')->exists($existingImage->image_path)) {
-                            Storage::disk('public')->delete($existingImage->image_path);
+                // Store new images
+                $files = $request->file('images');
+                if (is_array($files)) {
+                    foreach ($files as $index => $newImage) {
+                        if ($newImage && $newImage->isValid()) {
+                            $imageName = time().'_'.Str::random(10).'.'.$newImage->getClientOriginalExtension();
+                            $path = $newImage->storeAs('products', $imageName, 'public');
+
+                            ProductImage::create([
+                                'product_id' => $product->id,
+                                'image_path' => $path,
+                                'is_primary' => $index === 0,
+                                'sort_order' => $index,
+                            ]);
                         }
-                        $existingImage->delete();
                     }
-
-                    // Store new image
-                    $imageName = time().'_'.Str::random(10).'.'.$newImage->getClientOriginalExtension();
-                    $path = $newImage->storeAs('products', $imageName, 'public');
-
-                    ProductImage::create([
-                        'product_id' => $product->id,
-                        'image_path' => $path,
-                        'is_primary' => true,
-                        'sort_order' => 0,
-                    ]);
                 }
             }
 
             // Update warehouse stock if provided
             if ($request->has('warehouse_stock')) {
                 foreach ($request->warehouse_stock as $warehouseId => $quantity) {
+                    // Check warehouse access for non-admin
+                    if (! $user->isAdmin() && ! in_array($warehouseId, $user->warehouses()->pluck('id')->toArray())) {
+                        continue;
+                    }
+
                     $locationCode = $request->location_code[$warehouseId] ?? null;
 
                     $inventoryLocation = InventoryLocation::where('product_id', $product->id)
@@ -409,6 +478,24 @@ class ProductApiController extends Controller
 
     public function destroy(Request $request, Product $product)
     {
+        $user = $request->user();
+
+        // Admin can delete any product, others need warehouse access
+        if (! $user->isAdmin()) {
+            $warehouseIds = $user->warehouses()->pluck('id')->toArray();
+
+            $hasAccess = $product->warehouseProducts()
+                ->whereIn('warehouse_id', $warehouseIds)
+                ->exists();
+
+            if (! $hasAccess) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product not found or you do not have permission to delete',
+                ], 404);
+            }
+        }
+
         DB::beginTransaction();
 
         try {
@@ -423,7 +510,10 @@ class ProductApiController extends Controller
             // Delete inventory locations
             $product->inventoryLocations()->delete();
 
-            // Delete product (soft delete)
+            // Delete warehouse products
+            $product->warehouseProducts()->delete();
+
+            // Delete product (soft delete if model uses SoftDeletes)
             $product->delete();
 
             DB::commit();

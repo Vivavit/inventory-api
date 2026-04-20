@@ -20,9 +20,9 @@ class AssignAdminRoleSeeder extends Seeder
                 ->first();
             if ($adminSanctumRole) {
                 \DB::table('model_has_roles')->insertOrIgnore([
-                    'role_id'    => $adminSanctumRole->id,
+                    'role_id' => $adminSanctumRole->id,
                     'model_type' => 'App\Models\User',
-                    'model_id'   => $admin->id,
+                    'model_id' => $admin->id,
                 ]);
             }
             $this->command->info('Admin role assigned to admin@inventory.com');
@@ -38,9 +38,9 @@ class AssignAdminRoleSeeder extends Seeder
             $user->syncRoles(['staff']);
             if ($staffSanctumRole) {
                 \DB::table('model_has_roles')->insertOrIgnore([
-                    'role_id'    => $staffSanctumRole->id,
+                    'role_id' => $staffSanctumRole->id,
                     'model_type' => 'App\Models\User',
-                    'model_id'   => $user->id,
+                    'model_id' => $user->id,
                 ]);
             }
         }

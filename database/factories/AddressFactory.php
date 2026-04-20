@@ -38,5 +38,4 @@ class AddressFactory extends Factory
             'is_default' => true,
         ]);
     }
-
 }

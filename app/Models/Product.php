@@ -89,6 +89,7 @@ class Product extends Model
         if ($this->relationLoaded('warehouseProducts')) {
             return $this->warehouseProducts->sum('quantity');
         }
+
         return $this->warehouseProducts()->sum('quantity');
     }
 
@@ -143,5 +144,9 @@ class Product extends Model
                 $product->slug = Str::slug($product->name);
             }
         });
+    }
+    public function orderItems()
+    {
+        return $this->hasMany(\App\Models\OrderItem::class);
     }
 }

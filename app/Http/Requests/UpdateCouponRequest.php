@@ -14,7 +14,7 @@ class UpdateCouponRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => 'string|unique:coupons,code,' . $this->coupon->id,
+            'code' => 'string|unique:coupons,code,'.$this->coupon->id,
             'description' => 'nullable|string',
             'discount_type' => 'in:percentage,fixed',
             'discount_value' => 'numeric|min:0',

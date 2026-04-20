@@ -48,6 +48,7 @@ class UserFactory extends Factory
     /**
      * Summary of withoutTwoFactor
      * Indicate that the model does not have two-factor authentication configured.
+     *
      * @return UserFactory
      */
     public function withoutTwoFactor(): static
@@ -58,5 +59,4 @@ class UserFactory extends Factory
             'two_factor_confirmed_at' => null,
         ]);
     }
-
 }

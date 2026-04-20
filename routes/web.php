@@ -3,9 +3,9 @@
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WarehouseController;
 use Illuminate\Support\Facades\Route;
@@ -52,7 +52,9 @@ Route::middleware('auth')->group(function () {
 
     // Dashboard
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
+    Route::get('/analytics/data', [AnalyticsController::class, 'data'])->name('analytics.data');
 
     /*
     |--------------------------------------------------------------------------
@@ -66,20 +68,6 @@ Route::middleware('auth')->group(function () {
         Route::resource('products', ProductController::class)->except(['index', 'show']);
     });
     Route::get('products/{product}/modal', [ProductController::class, 'getForModal'])->name('products.modal');
-
-    /*
-    |--------------------------------------------------------------------------
-    | Orders
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
-    Route::get('/orders/create', [OrderController::class, 'create'])
-        ->name('orders.create')
-        ->middleware('permission:manage-inventory');
-    Route::post('/orders', [OrderController::class, 'store'])
-        ->name('orders.store')
-        ->middleware('permission:manage-inventory');
-    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 
     /*
     |--------------------------------------------------------------------------
@@ -137,18 +125,26 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Inventory
+    | Purchase Orders
     |--------------------------------------------------------------------------
     */
-    Route::prefix('inventory')->name('inventory.')->group(function () {
-        Route::post('/{product}/adjust', [InventoryController::class, 'adjust'])
-            ->middleware('permission:manage-inventory')
-            ->name('adjust');
-
-        Route::post('/{product}/transfer', [InventoryController::class, 'transfer'])
-            ->middleware('permission:manage-inventory')
-            ->name('transfer');
+    Route::middleware('permission:manage-inventory')->group(function () {
+        Route::resource('purchase-orders', \App\Http\Controllers\PurchaseOrderController::class);
+        Route::post('purchase-orders/{purchaseOrder}/receive', [\App\Http\Controllers\PurchaseOrderController::class, 'receive'])->name('purchase-orders.receive');
+        Route::patch('purchase-orders/{purchaseOrder}/status', [\App\Http\Controllers\PurchaseOrderController::class, 'updateStatus'])->name('purchase-orders.update-status');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Supplier Purchase Management
+    |--------------------------------------------------------------------------
+    */
+    Route::middleware('permission:manage-inventory')->group(function () {
+        Route::resource('supplier-purchases', \App\Http\Controllers\SupplierPurchaseController::class, ['parameters' => ['supplier-purchases' => 'purchase']]);
+        Route::get('supplier-purchases/product-history/{product}', [\App\Http\Controllers\SupplierPurchaseController::class, 'productHistory'])->name('supplier-purchases.product-history');
+        Route::post('supplier-purchases/{purchase}/confirm', [\App\Http\Controllers\SupplierPurchaseController::class, 'confirm'])->name('supplier-purchases.confirm');
+    });
+
     Route::get('/images/{path}', function ($path) {
         $fullPath = storage_path('app/public/products/'.$path);
 
@@ -156,10 +152,27 @@ Route::middleware('auth')->group(function () {
             $fullPath = storage_path('app/public/products/default.jpg');
         }
 
+        $mimeType = mime_content_type($fullPath) ?: 'application/octet-stream';
+
         return response()->file($fullPath, [
-            'Content-Type' => 'image/jpeg',
+            'Content-Type' => $mimeType,
             'Access-Control-Allow-Origin' => '*',
         ]);
     })->where('path', '.*');
 
 });
+
+/*
+|--------------------------------------------------------------------------
+| Orders (outside auth for testing)
+|--------------------------------------------------------------------------
+*/
+Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
+Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+Route::get('/orders/{order}/edit', [OrderController::class, 'edit'])->name('orders.edit');
+Route::put('/orders/{order}', [OrderController::class, 'update'])->name('orders.update');
+Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
+Route::get('/orders/{order}/data', [OrderController::class, 'getData'])->name('orders.data');
+Route::get('/orders/export/excel', [OrderController::class, 'exportExcel'])->name('orders.export.excel');
