@@ -1,0 +1,183 @@
+/* resources/css/features/users.css */
+
+/* Page Header */
+.page-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--white, #ffffff);
+    padding: var(--spacing-3xl, 32px);
+    border-radius: var(--radius-2xl, 20px);
+    margin-bottom: var(--spacing-3xl, 32px);
+    box-shadow: var(--shadow-lg);
+    animation: fadeInDown 0.6s ease;
+}
+
+html.dark .page-header {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.page-header h1 {
+    margin: 0 0 var(--spacing-xs, 4px) 0;
+    font-size: var(--font-size-4xl, 28px);
+    font-weight: var(--font-weight-extrabold, 800);
+}
+
+.page-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: var(--font-size-base, 13px);
+}
+
+/* Users Card */
+.users-card {
+    background: var(--bg-primary, #ffffff);
+    border-radius: var(--radius-xl, 16px);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    animation: fadeInUp 0.6s ease 0.2s backwards;
+}
+
+html.dark .users-card {
+    background: var(--bg-secondary);
+}
+
+/* Users Table */
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.users-table thead {
+    background: var(--bg-tertiary);
+}
+
+.users-table th {
+    padding: var(--spacing-lg, 16px) var(--spacing-xl, 20px);
+    text-align: left;
+    font-weight: var(--font-weight-bold, 700);
+    font-size: var(--font-size-sm, 12px);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    color: var(--text-secondary);
+}
+
+.users-table td {
+    padding: var(--spacing-lg, 16px) var(--spacing-xl, 20px);
+    border-bottom: 1px dashed var(--border-color);
+    vertical-align: middle;
+}
+
+.users-table tbody tr {
+    transition: all var(--transition-fast, 0.2s ease);
+}
+
+.users-table tbody tr:hover {
+    background: var(--bg-tertiary);
+}
+
+/* User Info */
+.user-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--white, #ffffff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--font-weight-bold, 700);
+    font-size: var(--font-size-md, 14px);
+    margin-right: var(--spacing-md, 12px);
+    flex-shrink: 0;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md, 12px);
+}
+
+.user-name {
+    font-weight: var(--font-weight-bold, 700);
+    color: var(--text-primary);
+    margin: 0;
+    font-size: var(--font-size-md, 15px);
+}
+
+.user-phone {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm, 12px);
+    margin: 0;
+}
+
+/* Badges & Tags */
+.warehouse-tag {
+    padding: 4px 8px;
+    border-radius: var(--radius-sm, 8px);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 10px;
+    font-weight: var(--font-weight-semibold, 600);
+    margin-right: 4px;
+    margin-bottom: 4px;
+    display: inline-block;
+    border: 1px solid var(--border-color);
+}
+
+.last-login {
+    font-size: var(--font-size-sm, 12px);
+    color: var(--text-secondary);
+}
+
+.action-buttons {
+    display: flex;
+    gap: var(--spacing-xs, 6px);
+    justify-content: flex-end;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: var(--bg-primary);
+}
+
+html.dark .empty-state {
+    background: var(--bg-secondary);
+}
+
+.empty-state i {
+    font-size: 64px;
+    margin-bottom: var(--spacing-lg, 16px);
+    color: var(--border-color-strong);
+}
+
+.empty-state h4 {
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm, 8px);
+    font-weight: var(--font-weight-bold, 700);
+}
+
+.empty-state p {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xl, 20px);
+}
+
+/* Custom badges */
+.badge-role-admin { background: rgba(239, 68, 68, 0.15); color: var(--danger); padding: 6px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.badge-role-staff { background: rgba(52, 199, 89, 0.15); color: var(--success); padding: 6px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.badge-status-active { background: rgba(52, 199, 89, 0.15); color: var(--success); padding: 6px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.badge-status-inactive { background: rgba(239, 68, 68, 0.15); color: var(--danger); padding: 6px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}

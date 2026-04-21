@@ -1,0 +1,202 @@
+/* resources/css/features/warehouses.css */
+
+/* Page Header */
+.page-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--white, #ffffff);
+    padding: var(--spacing-3xl, 32px);
+    border-radius: var(--radius-2xl, 20px);
+    margin-bottom: var(--spacing-3xl, 32px);
+    box-shadow: var(--shadow-lg);
+    animation: fadeInDown 0.6s ease;
+}
+
+html.dark .page-header {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.page-header h1 {
+    margin: 0 0 var(--spacing-xs, 4px) 0;
+    font-size: var(--font-size-4xl, 28px);
+    font-weight: var(--font-weight-extrabold, 800);
+}
+
+.page-header p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: var(--font-size-base, 13px);
+}
+
+/* Warehouse Grid */
+.warehouse-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--spacing-2xl, 24px);
+    margin-bottom: var(--spacing-3xl, 32px);
+}
+
+/* Warehouse Card */
+.warehouse-card {
+    background: var(--bg-primary, #ffffff);
+    border-radius: var(--radius-xl, 16px);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-base, 0.3s ease);
+    display: flex;
+    flex-direction: column;
+}
+
+html.dark .warehouse-card {
+    background: var(--bg-secondary);
+}
+
+.warehouse-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary-light);
+}
+
+.warehouse-card-header {
+    padding: var(--spacing-2xl, 24px);
+    background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+html.dark .warehouse-card-header {
+    background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+}
+
+.warehouse-card-title {
+    font-size: var(--font-size-xl, 18px);
+    font-weight: var(--font-weight-extrabold, 800);
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-xs, 4px);
+}
+
+.warehouse-card-code {
+    font-family: monospace;
+    background: var(--primary);
+    color: var(--white, #ffffff);
+    padding: 4px 10px;
+    border-radius: var(--radius-sm, 6px);
+    font-size: var(--font-size-xs, 11px);
+    display: inline-block;
+}
+
+html.dark .warehouse-card-code {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+/* Card Body & Stats */
+.warehouse-card-body {
+    padding: var(--spacing-2xl, 24px);
+    flex-grow: 1;
+}
+
+.warehouse-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md, 12px) 0;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+.warehouse-stat:last-child {
+    border-bottom: none;
+}
+
+.warehouse-stat-label {
+    color: var(--text-secondary);
+    font-size: var(--font-size-base, 13px);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
+}
+
+.warehouse-stat-value {
+    font-weight: var(--font-weight-bold, 700);
+    color: var(--text-primary);
+    font-size: var(--font-size-md, 14px);
+}
+
+/* Card Footer Actions */
+.warehouse-card-footer {
+    padding: var(--spacing-lg, 16px) var(--spacing-2xl, 24px);
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: var(--spacing-sm, 8px);
+}
+
+.warehouse-card-footer .btn {
+    flex: 1;
+}
+
+.warehouse-card-footer form {
+    flex: 1;
+    display: flex;
+}
+
+.warehouse-card-footer form .btn {
+    width: 100%;
+}
+
+html.dark .warehouse-card-footer {
+    background: var(--bg-tertiary);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    border: 1px dashed var(--border-color-strong);
+}
+
+html.dark .empty-state {
+    background: var(--bg-secondary);
+}
+
+.empty-state i {
+    font-size: 64px;
+    color: var(--border-color-strong);
+    margin-bottom: var(--spacing-lg);
+}
+
+.empty-state h4 {
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+    font-weight: var(--font-weight-bold);
+}
+
+.empty-state p {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xl);
+}
+
+/* Custom Status Badge */
+.status-badge {
+    padding: 6px 12px;
+    border-radius: var(--radius-md, 12px);
+    font-size: var(--font-size-xs, 12px);
+    font-weight: var(--font-weight-semibold, 600);
+}
+
+.status-active {
+    background-color: rgba(16, 185, 129, 0.15); /* success with opacity */
+    color: var(--success);
+}
+
+.status-inactive {
+    background-color: rgba(239, 68, 68, 0.15); /* danger with opacity */
+    color: var(--danger);
+}

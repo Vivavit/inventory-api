@@ -2,348 +2,11 @@
 
 @section('title','Products')
 
+@push('styles')
+    @vite(['resources/css/features/products.css'])
+@endpush
+
 @section('content')
-
-<style>
-    /* ── Page Header ── */
-    .page-header {
-        background: #03624C;
-        color: white;
-        padding: 28px 32px;
-        border-radius: 14px;
-        margin-bottom: 24px;
-        box-shadow: 0 4px 20px rgba(3,98,76,0.18);
-    }
-    .page-header h1 { margin: 0 0 4px; font-size: 24px; font-weight: 800; letter-spacing: -.3px; }
-    .page-header p  { margin: 0; opacity: .75; font-size: 13px; }
-
-    .btn-add-product {
-        background: white;
-        color: #03624C;
-        padding: 9px 18px;
-        font-size: 13px;
-        font-weight: 700;
-        border-radius: 8px;
-        border: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        cursor: pointer;
-        transition: box-shadow .2s, transform .2s;
-        white-space: nowrap;
-    }
-    .btn-add-product:hover { box-shadow: 0 4px 14px rgba(0,0,0,.15); transform: translateY(-1px); }
-
-    /* ── Table Card ── */
-    .products-card {
-        background: white;
-        border-radius: 14px;
-        box-shadow: 0 2px 12px rgba(0,0,0,.06);
-        border: 1px solid #eaf7f4;
-        overflow: hidden;
-    }
-
-    .products-table { width: 100%; border-collapse: collapse; }
-    .products-table thead { background: #03624C; color: white; }
-    .products-table th {
-        padding: 13px 16px;
-        text-align: left;
-        font-weight: 600;
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: .6px;
-        border: none;
-    }
-    .products-table td {
-        padding: 13px 16px;
-        border-bottom: 1px solid #f0faf7;
-        vertical-align: middle;
-        font-size: 13px;
-    }
-    .products-table tbody tr:last-child td { border-bottom: none; }
-    .products-table tbody tr:hover { background: #fafffe; }
-
-    .product-thumbnail {
-        width: 68px; height: 46px;
-        object-fit: cover;
-        border-radius: 7px;
-        border: 2px solid #e2f5f0;
-        cursor: pointer;
-        transition: border-color .2s, transform .2s;
-    }
-    .product-thumbnail:hover { border-color: #03624C; transform: scale(1.08); }
-
-    .product-name  { font-weight: 600; color: #1a2e28; margin: 0; font-size: 13px; }
-    .product-desc  { color: #7a9c94; font-size: 11px; margin: 2px 0 0; }
-
-    .sku-tag {
-        font-family: 'Courier New', monospace;
-        background: #e9fff9;
-        padding: 3px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-        color: #03624C;
-        font-weight: 700;
-    }
-
-    .cat-badge {
-        background: #f0faf7;
-        color: #03624C;
-        padding: 4px 10px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 600;
-        border: 1px solid #c8efe5;
-    }
-
-    .stock-num { font-weight: 700; font-size: 14px; }
-    .stock-num.hi   { color: #22c55e; }
-    .stock-num.mid  { color: #f59e0b; }
-    .stock-num.lo   { color: #ef4444; }
-
-    .price-val { font-weight: 700; color: #03624C; font-size: 14px; }
-
-    .action-buttons { display: flex; gap: 5px; justify-content: flex-end; }
-    .btn-ico {
-        width: 30px; height: 30px;
-        border-radius: 6px;
-        border: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-size: 13px;
-        color: white;
-        text-decoration: none;
-        transition: opacity .15s, transform .15s;
-    }
-    .btn-ico:hover { opacity: .85; transform: translateY(-1px); color: white; }
-    .ico-view   { background: #03624C; }
-    .ico-edit   { background: #0891b2; }
-    .ico-delete { background: #ef4444; }
-
-    .empty-state { text-align: center; padding: 70px 20px; color: #94a3b8; }
-    .empty-state i { font-size: 56px; display: block; margin-bottom: 12px; opacity: .4; }
-
-    /* ── Modal ── */
-    .modal-backdrop { z-index: 1040 !important; }
-    .modal          { z-index: 1050 !important; }
-
-    .modal-content  { border-radius: 14px; border: none; box-shadow: 0 24px 60px rgba(0,0,0,.22); }
-
-    .modal-header {
-        background: #03624C;
-        color: white;
-        border-radius: 14px 14px 0 0;
-        border: none;
-        padding: 18px 24px;
-    }
-    .modal-header .btn-close { filter: invert(1) opacity(.8); }
-    .modal-title { font-weight: 700; font-size: 16px; }
-
-    .modal-body   { padding: 24px; max-height: 74vh; overflow-y: auto; }
-    .modal-footer { padding: 14px 24px; border-top: 1px solid #edf7f4; gap: 8px; }
-
-    /* form sections inside modal */
-    .form-section {
-        border: 1px solid #e8f5f0;
-        border-radius: 10px;
-        padding: 18px;
-        margin-bottom: 18px;
-    }
-    .form-section-title {
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: .6px;
-        color: #03624C;
-        margin-bottom: 14px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .flabel {
-        font-weight: 600;
-        color: #374151;
-        font-size: 12px;
-        margin-bottom: 5px;
-        display: block;
-    }
-    .flabel .req { color: #ef4444; }
-
-    .finput, .fselect, .ftextarea {
-        width: 100%;
-        border: 1.5px solid #e2e8f0;
-        border-radius: 7px;
-        padding: 9px 12px;
-        font-size: 13px;
-        transition: border-color .2s, box-shadow .2s;
-        background: white;
-        color: #1e293b;
-    }
-    .finput:focus, .fselect:focus, .ftextarea:focus {
-        border-color: #03624C;
-        box-shadow: 0 0 0 3px rgba(3,98,76,.08);
-        outline: none;
-    }
-    .ftextarea { resize: vertical; }
-
-    .input-prefix {
-        display: flex;
-        align-items: center;
-        border: 1.5px solid #e2e8f0;
-        border-radius: 7px;
-        overflow: hidden;
-        transition: border-color .2s, box-shadow .2s;
-    }
-    .input-prefix:focus-within {
-        border-color: #03624C;
-        box-shadow: 0 0 0 3px rgba(3,98,76,.08);
-    }
-    .input-prefix span {
-        background: #f8fafc;
-        padding: 9px 11px;
-        font-size: 13px;
-        color: #64748b;
-        border-right: 1.5px solid #e2e8f0;
-        flex-shrink: 0;
-    }
-    .input-prefix input {
-        border: none;
-        padding: 9px 12px;
-        font-size: 13px;
-        flex: 1;
-        outline: none;
-        color: #1e293b;
-    }
-
-    .sku-row { display: flex; gap: 6px; }
-    .sku-row .finput { flex: 1; }
-    .btn-gen {
-        padding: 9px 14px;
-        background: #f1f5f9;
-        border: 1.5px solid #e2e8f0;
-        border-radius: 7px;
-        font-size: 12px;
-        font-weight: 600;
-        color: #475569;
-        cursor: pointer;
-        white-space: nowrap;
-        transition: background .15s;
-    }
-    .btn-gen:hover { background: #e2e8f0; }
-
-    /* warehouse stock mini-table */
-    .wh-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    .wh-table th {
-        padding: 7px 10px;
-        background: #f8fafc;
-        color: #64748b;
-        font-weight: 600;
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: .4px;
-        border-bottom: 1px solid #e2e8f0;
-        text-align: left;
-    }
-    .wh-table td { padding: 8px 10px; border-bottom: 1px solid #f0f4f8; vertical-align: middle; }
-    .wh-table tbody tr:last-child td { border-bottom: none; }
-    .wh-input {
-        width: 90px;
-        border: 1.5px solid #e2e8f0;
-        border-radius: 6px;
-        padding: 6px 8px;
-        font-size: 12px;
-        text-align: center;
-        transition: border-color .2s;
-    }
-    .wh-input:focus { border-color: #03624C; outline: none; }
-    .wh-loc {
-        width: 100%;
-        border: 1.5px solid #e2e8f0;
-        border-radius: 6px;
-        padding: 6px 8px;
-        font-size: 12px;
-        transition: border-color .2s;
-    }
-    .wh-loc:focus { border-color: #03624C; outline: none; }
-
-    /* toggle switches */
-    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f4f8; }
-    .toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
-    .toggle-label { font-size: 13px; color: #374151; font-weight: 500; }
-    .toggle-label small { display: block; color: #94a3b8; font-size: 11px; font-weight: 400; }
-
-    /* image upload */
-    .upload-zone {
-        border: 2px dashed #c8e6de;
-        border-radius: 10px;
-        padding: 24px;
-        text-align: center;
-        cursor: pointer;
-        transition: border-color .2s, background .2s;
-        background: #f8fffe;
-    }
-    .upload-zone:hover { border-color: #03624C; background: #f0faf7; }
-    .upload-zone i { font-size: 28px; color: #9ecfc4; display: block; margin-bottom: 6px; }
-    .upload-zone p { margin: 0; font-size: 12px; color: #7a9c94; }
-
-    .img-preview-wrap {
-        position: relative;
-        display: inline-block;
-        margin-top: 12px;
-    }
-    .img-preview-wrap img {
-        width: 110px;
-        height: 75px;
-        object-fit: cover;
-        border-radius: 8px;
-        border: 2px solid #c8e6de;
-        display: block;
-    }
-    .img-remove {
-        position: absolute;
-        top: -6px; right: -6px;
-        width: 20px; height: 20px;
-        border-radius: 50%;
-        background: #ef4444;
-        color: white;
-        border: none;
-        font-size: 11px;
-        cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-    }
-
-    /* save / cancel buttons */
-    .btn-save {
-        background: #03624C;
-        color: white;
-        padding: 10px 22px;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 13px;
-        border: none;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        transition: background .2s, transform .2s;
-    }
-    .btn-save:hover { background: #024a3a; transform: translateY(-1px); }
-    .btn-cancel {
-        background: white;
-        color: #64748b;
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 13px;
-        border: 1.5px solid #e2e8f0;
-        cursor: pointer;
-        transition: background .15s;
-    }
-    .btn-cancel:hover { background: #f8fafc; }
-</style>
 
 {{-- Page Header --}}
 <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
@@ -351,7 +14,7 @@
         <h1>Products</h1>
         <p>Manage and organise your product inventory</p>
     </div>
-    <button type="button" class="btn-add-product" onclick="openCreateModal()">
+    <button type="button" class="btn btn-primary btn-add-product">
         <i class="bi bi-plus-lg"></i> Add Product
     </button>
 </div>
@@ -384,10 +47,10 @@
                                     <img src="{{ $product->primaryImage->url }}"
                                          alt="{{ $product->name }}"
                                          class="product-thumbnail"
-                                         onclick="openEditModal({{ $product->id }})"
+                                         data-id="{{ $product->id }}"
                                          onerror="this.src='https://placehold.co/68x46/e9fff9/03624C?text=?'">
                                 @else
-                                    <div style="width:68px;height:46px;background:#e9fff9;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#9ecfc4;">
+                                    <div style="width:68px;height:46px;background:var(--bg-tertiary);border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);" class="product-thumbnail" data-id="{{ $product->id }}">
                                         <i class="bi bi-image"></i>
                                     </div>
                                 @endif
@@ -401,21 +64,21 @@
                                 @if($product->category)
                                     <span class="cat-badge">{{ $product->category->name }}</span>
                                 @else
-                                    <span style="color:#ccc;">—</span>
+                                    <span style="color:var(--text-tertiary);">—</span>
                                 @endif
                             </td>
                             <td>
                                 <span class="stock-num {{ $sc }}">{{ $stock }}</span>
-                                <span style="color:#a0b8b2;font-size:11px;"> units</span>
+                                <span style="color:var(--text-secondary);font-size:11px;"> units</span>
                             </td>
                             <td><span class="price-val">${{ number_format($product->price,2) }}</span></td>
                             <td style="text-align:right;">
                                 <div class="action-buttons">
-                                    <a href="{{ route('products.show', $product) }}" class="btn-ico ico-view" title="View"><i class="bi bi-eye"></i></a>
-                                    <button type="button" class="btn-ico ico-edit" onclick="openEditModal({{ $product->id }})" title="Edit"><i class="bi bi-pencil"></i></button>
-                                    <form action="{{ route('products.destroy', $product) }}" method="POST" style="display:inline;" onsubmit="return confirm('Delete {{ addslashes($product->name) }}?');">
+                                    <a href="{{ route('products.show', $product) }}" class="btn btn-primary btn-sm btn-icon" title="View"><i class="bi bi-eye"></i></a>
+                                    <button type="button" class="btn btn-outline btn-sm btn-icon btn-edit-product" data-id="{{ $product->id }}" title="Edit"><i class="bi bi-pencil"></i></button>
+                                    <form action="{{ route('products.destroy', $product) }}" method="POST" style="display:inline;" data-product-name="{{ $product->name }}">
                                         @csrf @method('DELETE')
-                                        <button type="submit" class="btn-ico ico-delete" title="Delete"><i class="bi bi-trash"></i></button>
+                                        <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Delete"><i class="bi bi-trash"></i></button>
                                     </form>
                                 </div>
                             </td>
@@ -430,9 +93,9 @@
     @else
         <div class="empty-state">
             <i class="bi bi-inbox"></i>
-            <h5 style="color:#475569;">No Products Yet</h5>
-            <p style="font-size:13px;">Create your first product to get started.</p>
-            <button type="button" class="btn-add-product" style="margin-top:10px;" onclick="openCreateModal()">
+            <h5>No Products Yet</h5>
+            <p>Create your first product to get started.</p>
+            <button type="button" class="btn btn-primary mt-3 btn-add-product">
                 <i class="bi bi-plus-lg"></i> Add Product
             </button>
         </div>
@@ -474,7 +137,7 @@
                                         <label class="flabel">SKU <span class="req">*</span></label>
                                         <div class="sku-row">
                                             <input type="text" name="sku" id="mSku" class="finput" required>
-                                            <button type="button" class="btn-gen" onclick="generateSKU()">Generate</button>
+                                            <button type="button" class="btn-gen" onclick="window.generateSKU()">Generate</button>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -556,7 +219,7 @@
                                         <tbody>
                                             @foreach($warehouses as $wh)
                                             <tr>
-                                                <td style="font-weight:600;color:#1e293b;">{{ $wh->name }}</td>
+                                                <td style="font-weight:600;color:var(--text-primary);">{{ $wh->name }}</td>
                                                 <td><input type="number" name="warehouse_stock[{{ $wh->id }}]" class="wh-input" value="0" min="0"></td>
                                                 <td><input type="text" name="location_code[{{ $wh->id }}]" class="wh-loc" placeholder="A-01-01"></td>
                                             </tr>
@@ -579,11 +242,11 @@
                                     <p>Click to upload</p>
                                     <p style="font-size:11px;opacity:.6;">JPEG, PNG · max 2 MB</p>
                                 </div>
-                                <input type="file" id="mImages" name="images[]" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
+                                <input type="file" id="mImages" name="images[]" accept="image/*" style="display:none;" onchange="window.handleImageSelect(event)">
                                 <div id="mImgPreviewWrap" class="d-none" style="text-align:center;">
                                     <div class="img-preview-wrap">
                                         <img id="mImgPreview" src="" alt="Preview">
-                                        <button type="button" class="img-remove" onclick="removeImage()"><i class="bi bi-x"></i></button>
+                                        <button type="button" class="img-remove" onclick="window.removeImage()"><i class="bi bi-x"></i></button>
                                     </div>
                                 </div>
                             </div>
@@ -624,8 +287,8 @@
                             </div>
 
                             {{-- Tips --}}
-                            <div style="background:#f8fffe;border:1px solid #d4ede7;border-radius:10px;padding:14px;font-size:12px;color:#4a7c6f;">
-                                <strong style="display:flex;align-items:center;gap:5px;margin-bottom:8px;color:#03624C;"><i class="bi bi-lightbulb"></i> Tips</strong>
+                            <div style="background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:10px;padding:14px;font-size:12px;color:var(--text-secondary);">
+                                <strong style="display:flex;align-items:center;gap:5px;margin-bottom:8px;color:var(--primary);"><i class="bi bi-lightbulb"></i> Tips</strong>
                                 <ul style="margin:0;padding-left:16px;line-height:1.9;">
                                     <li>SKU must be unique across all products.</li>
                                     <li>Compare price should exceed selling price.</li>
@@ -641,8 +304,8 @@
                 </div>{{-- /modal-body --}}
 
                 <div class="modal-footer">
-                    <button type="button" class="btn-cancel" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn-save" id="mSubmitBtn">
+                    <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="mSubmitBtn">
                         <i class="bi bi-check-lg"></i> Save Product
                     </button>
                 </div>
@@ -654,204 +317,5 @@
 @endsection
 
 @push('scripts')
-<script>
-/* ──────────────────────────────────────────
-   Helpers
-────────────────────────────────────────── */
-function generateSKU() {
-    document.getElementById('mSku').value = 'SKU-' + Math.random().toString(36).substr(2,8).toUpperCase();
-}
-
-function handleImageSelect(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => {
-        document.getElementById('mImgPreview').src = ev.target.result;
-        document.getElementById('mImgPreviewWrap').classList.remove('d-none');
-        document.getElementById('uploadZone').style.display = 'none';
-    };
-    reader.readAsDataURL(file);
-}
-
-function removeImage() {
-    document.getElementById('mImages').value = '';
-    document.getElementById('mImgPreviewWrap').classList.add('d-none');
-    document.getElementById('uploadZone').style.display = '';
-}
-
-/* ──────────────────────────────────────────
-   Reset form to blank Create state
-────────────────────────────────────────── */
-function resetForm() {
-    const form = document.getElementById('productForm');
-    form.reset();
-
-    // toggles default
-    document.getElementById('mIsActive').checked     = true;
-    document.getElementById('mManageStock').checked  = true;
-    document.getElementById('mIsFeatured').checked   = false;
-
-    // image preview
-    removeImage();
-
-    // clear errors
-    const errBox = document.getElementById('modalErrors');
-    errBox.innerHTML = '';
-    errBox.classList.add('d-none');
-
-    // warehouse qty back to 0
-    document.querySelectorAll('.wh-input').forEach(i => i.value = '0');
-    document.querySelectorAll('.wh-loc').forEach(i   => i.value = '');
-}
-
-/* ──────────────────────────────────────────
-   Open CREATE
-────────────────────────────────────────── */
-function openCreateModal() {
-    const modalEl = document.getElementById('productModal');
-
-    // destroy stale instance
-    const existing = bootstrap.Modal.getInstance(modalEl);
-    if (existing) existing.dispose();
-
-    // clean up any leftover backdrops
-    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-    document.body.classList.remove('modal-open');
-    document.body.style.removeProperty('overflow');
-    document.body.style.removeProperty('padding-right');
-
-    resetForm();
-
-    const form = document.getElementById('productForm');
-    form.action = '{{ route("products.store") }}';
-    document.getElementById('formMethod').value = 'POST';
-    document.getElementById('productModalLabel').innerHTML = '<i class="bi bi-plus-circle me-2"></i>Add New Product';
-    document.getElementById('mSubmitBtn').innerHTML = '<i class="bi bi-check-lg"></i> Save Product';
-
-    new bootstrap.Modal(modalEl, { backdrop: true, keyboard: true, focus: true }).show();
-}
-
-/* ──────────────────────────────────────────
-   Open EDIT
-────────────────────────────────────────── */
-function openEditModal(productId) {
-    const modalEl = document.getElementById('productModal');
-
-    const existing = bootstrap.Modal.getInstance(modalEl);
-    if (existing) existing.dispose();
-
-    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-    document.body.classList.remove('modal-open');
-    document.body.style.removeProperty('overflow');
-    document.body.style.removeProperty('padding-right');
-
-    resetForm();
-
-    document.getElementById('productModalLabel').innerHTML = '<i class="bi bi-pencil-square me-2"></i>Edit Product';
-    document.getElementById('mSubmitBtn').innerHTML = '<i class="bi bi-check-lg"></i> Update Product';
-
-    const modal = new bootstrap.Modal(modalEl, { backdrop: true, keyboard: true, focus: true });
-    modal.show();
-
-    fetch(`/products/${productId}/edit`, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
-    })
-    .then(r => r.json())
-    .then(data => {
-        const form = document.getElementById('productForm');
-        form.action = `/products/${productId}`;
-        document.getElementById('formMethod').value = 'PUT';
-
-        document.getElementById('mName').value          = data.name            ?? '';
-        document.getElementById('mSku').value           = data.sku             ?? '';
-        document.getElementById('mPrice').value         = data.price           ?? '';
-        document.getElementById('mComparePrice').value  = data.compare_price   ?? '';
-        document.getElementById('mCostPrice').value     = data.cost_price      ?? '';
-        document.getElementById('mCategory').value      = data.category_id     ?? '';
-        document.getElementById('mBrand').value         = data.brand_id        ?? '';
-        document.getElementById('mShortDesc').value     = data.short_description ?? '';
-        document.getElementById('mDesc').value          = data.description     ?? '';
-        document.getElementById('mIsActive').checked    = !!data.is_active;
-        document.getElementById('mManageStock').checked = !!data.manage_stock;
-        document.getElementById('mIsFeatured').checked  = !!data.is_featured;
-
-        // warehouse stock
-        if (data.warehouse_stock) {
-            Object.entries(data.warehouse_stock).forEach(([whId, qty]) => {
-                const inp = document.querySelector(`input[name="warehouse_stock[${whId}]"]`);
-                if (inp) inp.value = qty;
-            });
-        }
-    })
-    .catch(() => {
-        document.getElementById('modalErrors').innerHTML =
-            '<div class="alert alert-danger">Failed to load product data. Please try again.</div>';
-        document.getElementById('modalErrors').classList.remove('d-none');
-    });
-}
-
-/* ──────────────────────────────────────────
-   Form submit (AJAX)
-────────────────────────────────────────── */
-document.getElementById('productForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const form      = this;
-    const btn       = document.getElementById('mSubmitBtn');
-    const origHTML  = btn.innerHTML;
-    const errBox    = document.getElementById('modalErrors');
-
-    btn.disabled    = true;
-    btn.innerHTML   = '<span class="spinner-border spinner-border-sm me-2"></span>Saving…';
-    errBox.innerHTML = '';
-    errBox.classList.add('d-none');
-
-    fetch(form.action, {
-        method: 'POST',
-        body: new FormData(form),
-        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
-    })
-    .then(r => {
-        if (r.redirected) { window.location.href = r.url; return; }
-        return r.json();
-    })
-    .then(data => {
-        if (!data) return;
-        if (data.success || data.id) {
-            window.location.reload();
-            return;
-        }
-        if (data.errors) {
-            const list = Object.values(data.errors).flat().map(e => `<li>${e}</li>`).join('');
-            errBox.innerHTML = `<div class="alert alert-danger"><strong>Please fix:</strong><ul class="mb-0 mt-1">${list}</ul></div>`;
-            errBox.classList.remove('d-none');
-        } else if (data.message) {
-            errBox.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
-            errBox.classList.remove('d-none');
-        }
-        btn.disabled  = false;
-        btn.innerHTML = origHTML;
-    })
-    .catch(() => {
-        errBox.innerHTML = '<div class="alert alert-danger">An error occurred. Please try again.</div>';
-        errBox.classList.remove('d-none');
-        btn.disabled  = false;
-        btn.innerHTML = origHTML;
-    });
-});
-
-/* ──────────────────────────────────────────
-   Clean up on close
-────────────────────────────────────────── */
-document.addEventListener('DOMContentLoaded', function () {
-    document.getElementById('productModal').addEventListener('hidden.bs.modal', function () {
-        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-        document.body.classList.remove('modal-open');
-        document.body.style.removeProperty('overflow');
-        document.body.style.removeProperty('padding-right');
-        resetForm();
-    });
-});
-</script>
+    @vite(['resources/js/features/products.js'])
 @endpush

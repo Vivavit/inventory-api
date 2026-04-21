@@ -1,6 +1,7 @@
 /**
  * Design System - Comprehensive component library
- * Scalable, maintainable CSS for all UI components
+ * Production-ready with full dark mode support
+ * Desktop-optimized for 17-27 inch monitors
  */
 
 /* ===== CSS VARIABLES ===== */
@@ -15,21 +16,29 @@
   --danger: #EF4444;
   --info: #3B82F6;
 
-  --bg-primary: #f4fbfa;
-  --bg-secondary: #eaf6f3;
-  --bg-tertiary: #f9fafb;
-  --text-primary: #18242b;
-  --text-secondary: #6c7884;
-  --text-tertiary: #9db7b1;
-  --border-color: rgba(22, 40, 56, 0.08);
-  --border-color-strong: rgba(22, 40, 56, 0.12);
-  --white: #ffffff;
+  /* Background colors - Light */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --bg-hover: #f0f1f2;
+
+  /* Text colors */
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --text-invert: #ffffff;
+
+  /* Border colors */
+  --border-color: #e5e7eb;
+  --border-color-strong: #d1d5db;
+  --border-color-light: #f3f4f6;
 
   /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
 
   /* Border Radius */
   --radius-sm: 6px;
@@ -38,6 +47,7 @@
   --radius-xl: 16px;
   --radius-2xl: 20px;
   --radius-3xl: 24px;
+  --radius-full: 9999px;
 
   /* Typography */
   --font-family: 'Instrument Sans', system-ui, -apple-system, sans-serif;
@@ -48,16 +58,17 @@
   --font-size-lg: 16px;
   --font-size-xl: 18px;
   --font-size-2xl: 20px;
-  --font-size-3xl: 28px;
-  --font-size-4xl: 36px;
+  --font-size-3xl: 24px;
+  --font-size-4xl: 28px;
+  --font-size-5xl: 36px;
 
-  --font-weight-regular: 400;
+  --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
   --font-weight-extrabold: 800;
 
-  /* Spacing */
+  /* Spacing - Desktop Optimized */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 12px;
@@ -66,6 +77,7 @@
   --spacing-2xl: 24px;
   --spacing-3xl: 32px;
   --spacing-4xl: 40px;
+  --spacing-5xl: 48px;
 
   /* Transitions */
   --transition-fast: 0.15s ease;
@@ -78,21 +90,31 @@
   --line-height-relaxed: 1.75;
 }
 
-/* ===== DARK MODE ===== */
+/* ===== DARK MODE - COMPLETE OVERRIDE ===== */
 html.dark {
-  --bg-primary: #061a16;
-  --bg-secondary: #0b2620;
-  --bg-tertiary: #143a32;
-  --text-primary: #e8f5f2;
-  --text-secondary: #9db7b1;
-  --text-tertiary: #7a9a93;
-  --border-color: rgba(255, 255, 255, 0.06);
-  --border-color-strong: rgba(255, 255, 255, 0.12);
-  --white: #0f2e28;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
-  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.6);
+  /* Background colors - Dark */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --bg-hover: #475569;
+
+  /* Text colors - Dark */
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --text-invert: #0f172a;
+
+  /* Border colors - Dark */
+  --border-color: #334155;
+  --border-color-strong: #475569;
+  --border-color-light: #1e293b;
+
+  /* Shadows - Dark (stronger) */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
 }
 
 /* ===== RESET & BASE STYLES ===== */
