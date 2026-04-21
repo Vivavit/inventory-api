@@ -50,6 +50,20 @@
             </div>
 
             <div class="nav-group">
+                <p class="nav-group-title">Purchasing</p>
+                @can('manage-inventory')
+                <a href="{{ route('purchase-orders.index') }}" class="{{ request()->is('purchase-orders*') ? 'active' : '' }}" title="Purchase Orders">
+                    <i class="bi bi-clipboard-check"></i>
+                    <span class="link-text">Purchase Orders</span>
+                </a>
+                <a href="{{ route('supplier-purchases.index') }}" class="{{ request()->is('supplier-purchases*') ? 'active' : '' }}" title="Supplier Purchases">
+                    <i class="bi bi-truck"></i>
+                    <span class="link-text">Supplier Purchases</span>
+                </a>
+                @endcan
+            </div>
+
+            <div class="nav-group">
                 <p class="nav-group-title">Management</p>
                 @can('view-analytics')
                 <a href="{{ route('analytics') }}" class="{{ request()->is('analytics*') ? 'active' : '' }}" title="Analytics">

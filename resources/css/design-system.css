@@ -92,22 +92,22 @@
 
 /* ===== DARK MODE - COMPLETE OVERRIDE ===== */
 html.dark {
-  /* Background colors - Dark */
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-tertiary: #334155;
-  --bg-hover: #475569;
+  /* Background colors - Dark Green */
+  --bg-primary: #0a1f1a;
+  --bg-secondary: #122b24;
+  --bg-tertiary: #1a3a34;
+  --bg-hover: #24453e;
 
   /* Text colors - Dark */
-  --text-primary: #f1f5f9;
-  --text-secondary: #cbd5e1;
-  --text-tertiary: #94a3b8;
-  --text-invert: #0f172a;
+  --text-primary: #e8f5f2;
+  --text-secondary: #b0d4d0;
+  --text-tertiary: #7fa9a4;
+  --text-invert: #0a1f1a;
 
   /* Border colors - Dark */
-  --border-color: #334155;
-  --border-color-strong: #475569;
-  --border-color-light: #1e293b;
+  --border-color: #1a3a34;
+  --border-color-strong: #24453e;
+  --border-color-light: #122b24;
 
   /* Shadows - Dark (stronger) */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);

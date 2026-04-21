@@ -5,10 +5,65 @@
 
 import Alpine from 'alpinejs';
 
+// Theme Color Manager
+class ThemeColorManager {
+    constructor() {
+        this.isDark = document.documentElement.classList.contains('dark');
+        this.observeThemeChanges();
+    }
+
+    observeThemeChanges() {
+        const observer = new MutationObserver(() => {
+            this.isDark = document.documentElement.classList.contains('dark');
+        });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    getComputedVar(varName) {
+        return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    }
+
+    getPrimaryColor() {
+        return this.isDark ? '#0fb9b1' : '#0D9488';
+    }
+
+    getSecondaryColor() {
+        return '#6366F1';
+    }
+
+    getTextColor() {
+        return this.isDark ? '#e8f5f2' : '#1f2937';
+    }
+
+    getGridColor() {
+        return this.isDark ? 'rgba(15, 185, 177, 0.08)' : 'rgba(3, 98, 76, 0.06)';
+    }
+
+    getTooltipBg() {
+        return this.isDark ? '#122b24' : '#ffffff';
+    }
+
+    getTooltipText() {
+        return this.isDark ? '#e8f5f2' : '#1f2937';
+    }
+
+    getChartColors() {
+        return [
+            '#0fb9b1', '#0D9488', '#3b82f6', '#f59e0b',
+            '#8b5cf6', '#ef4444', '#10b981', '#6366f1'
+        ];
+    }
+}
+
 // Chart Manager - Handles all Chart.js instances
 class ChartManager {
     constructor() {
         this.charts = new Map();
+        this.themeManager = new ThemeColorManager();
+        this.updateDefaultOptions();
+    }
+
+    updateDefaultOptions() {
         this.defaultOptions = {
             responsive: true,
             maintainAspectRatio: false,
@@ -16,18 +71,20 @@ class ChartManager {
             plugins: {
                 legend: {
                     labels: { 
-                        color: '#5c7c6e',
+                        color: this.themeManager.getTextColor(),
                         font: { size: 11, family: 'system-ui' },
                         padding: 12,
                         usePointStyle: true
                     }
                 },
                 tooltip: {
-                    backgroundColor: '#0a1c14',
-                    titleColor: '#ffffff',
-                    bodyColor: '#d1e0d9',
+                    backgroundColor: this.themeManager.getTooltipBg(),
+                    titleColor: this.themeManager.getTextColor(),
+                    bodyColor: this.themeManager.getTextColor(),
                     padding: 12,
                     cornerRadius: 8,
+                    borderColor: this.themeManager.getPrimaryColor(),
+                    borderWidth: 1
                 }
             }
         };
@@ -64,11 +121,11 @@ class ChartManager {
     getAxisConfig() {
         return {
             grid: { 
-                color: 'rgba(3, 98, 76, 0.06)',
+                color: this.themeManager.getGridColor(),
                 drawBorder: false 
             },
             ticks: { 
-                color: '#5c7c6e',
+                color: this.themeManager.getTextColor(),
                 font: { size: 11 }
             }
         };
@@ -339,6 +396,7 @@ document.addEventListener('alpine:init', () => {
         
         renderOverviewCharts() {
             const { stock_value_trend, category_distribution, sales_trend } = this.data;
+            const colors = this.chartManager.themeManager;
             
             // Stock Value Chart
             this.chartManager.create('stockValueChart', {
@@ -348,8 +406,11 @@ document.addEventListener('alpine:init', () => {
                     datasets: [{
                         label: 'Stock Value',
                         data: stock_value_trend?.values || [],
-                        borderColor: '#03624c',
-                        backgroundColor: this.createGradient('stockValueChart', ['rgba(3,98,76,0.15)', 'rgba(3,98,76,0)']),
+                        borderColor: colors.getPrimaryColor(),
+                        backgroundColor: this.createGradient('stockValueChart', [
+                            'rgba(15, 185, 177, 0.15)', 
+                            'rgba(15, 185, 177, 0)'
+                        ]),
                         borderWidth: 2.5,
                         pointRadius: 3,
                         pointHoverRadius: 6,
@@ -381,10 +442,7 @@ document.addEventListener('alpine:init', () => {
                     labels: category_distribution?.labels || [],
                     datasets: [{
                         data: category_distribution?.values || [],
-                        backgroundColor: [
-                            '#03624c', '#0fb9b1', '#3b82f6', '#f59e0b',
-                            '#8b5cf6', '#ef4444', '#10b981', '#6366f1'
-                        ],
+                        backgroundColor: colors.getChartColors(),
                         borderWidth: 0,
                         hoverOffset: 6
                     }]
@@ -411,8 +469,11 @@ document.addEventListener('alpine:init', () => {
                     datasets: [{
                         label: 'Sales',
                         data: sales_trend?.values || [],
-                        backgroundColor: this.createGradient('salesTrendChart', ['rgba(15,185,177,0.2)', 'rgba(15,185,177,0)']),
-                        borderColor: '#0fb9b1',
+                        backgroundColor: this.createGradient('salesTrendChart', [
+                            'rgba(15, 185, 177, 0.2)', 
+                            'rgba(15, 185, 177, 0)'
+                        ]),
+                        borderColor: colors.getPrimaryColor(),
                         borderWidth: 1.5,
                         borderRadius: 6,
                         borderSkipped: false
@@ -438,6 +499,7 @@ document.addEventListener('alpine:init', () => {
         
         renderTrendsCharts() {
             const { monthly_performance, category_momentum } = this.data;
+            const colors = this.chartManager.themeManager;
             
             // Monthly Performance Chart
             this.chartManager.create('monthlyPerformanceChart', {
@@ -447,7 +509,7 @@ document.addEventListener('alpine:init', () => {
                     datasets: [{
                         label: 'Revenue',
                         data: monthly_performance?.values || [],
-                        backgroundColor: '#0fb9b1',
+                        backgroundColor: colors.getPrimaryColor(),
                         borderRadius: 6,
                         borderSkipped: false
                     }]
@@ -507,6 +569,7 @@ document.addEventListener('alpine:init', () => {
         renderWarehouseCharts() {
             const { warehouse } = this.data;
             const chartData = warehouse?.chart || {};
+            const colors = this.chartManager.themeManager;
             
             this.chartManager.create('warehouseComparisonChart', {
                 type: 'bar',
@@ -516,8 +579,8 @@ document.addEventListener('alpine:init', () => {
                         {
                             label: 'Capacity',
                             data: chartData.capacity || [],
-                            backgroundColor: 'rgba(3,98,76,0.12)',
-                            borderColor: '#03624c',
+                            backgroundColor: 'rgba(15, 185, 177, 0.12)',
+                            borderColor: colors.getPrimaryColor(),
                             borderWidth: 1.5,
                             borderRadius: 4,
                             borderSkipped: false
@@ -525,7 +588,7 @@ document.addEventListener('alpine:init', () => {
                         {
                             label: 'Used',
                             data: chartData.used || [],
-                            backgroundColor: '#0fb9b1',
+                            backgroundColor: colors.getPrimaryColor(),
                             borderRadius: 4,
                             borderSkipped: false
                         }

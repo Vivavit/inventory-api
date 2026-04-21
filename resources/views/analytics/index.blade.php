@@ -140,6 +140,13 @@
         </div>
 
         <div id="warehouseTab" class="analytics-tab-panel">
+            <article class="chart-card loading chart-full">
+                <div class="chart-card-header">
+                    <h3>Warehouse utilization</h3>
+                    <span class="badge badge-primary">Capacity</span>
+                </div>
+                <div class="chart-frame"><canvas id="warehouseComparisonChart"></canvas></div>
+            </article>
             <div class="warehouse-grid" id="warehouseGrid"></div>
         </div>
 
