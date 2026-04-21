@@ -6,13 +6,18 @@
 
 <style>
     .dashboard-section {
-        background: white;
+        background: var(--surface);
         border-radius: 16px;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
         overflow: hidden;
-        border: 1px solid #E9FFFA;
+        border: 1px solid var(--border-soft);
         animation: fadeInUp 0.6s ease forwards;
         opacity: 0;
+        color: var(--text);
+    }
+
+    html.dark .dashboard-section {
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
     }
 
     .dashboard-tabs {
@@ -81,16 +86,17 @@
     }
 
     .kpi-card {
-        background: white;
+        background: var(--surface);
         border-radius: 16px;
         padding: 24px;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-        border: 1px solid #E9FFFA;
+        border: 1px solid var(--border-soft);
         transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
         animation: fadeInUp 0.6s ease forwards;
         opacity: 0;
+        color: var(--text);
     }
 
     .kpi-card:nth-child(1) { animation-delay: 0.1s; }

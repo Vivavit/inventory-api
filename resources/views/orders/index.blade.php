@@ -407,15 +407,6 @@
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
 
-    .btn-delete {
-        background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
-        color: white;
-    }
-
-    .btn-delete:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-    }
 
     /* Empty State */
     .empty-state {
@@ -720,20 +711,6 @@
     }
 </style>
 
-<!-- Page Header -->
-<div class="page-header d-flex justify-content-between align-items-center flex-wrap fade-in-down">
-    <div>
-        <h1>
-            <i class="bi bi-receipt me-2"></i>Orders
-        </h1>
-        <p>Manage and track customer orders efficiently</p>
-    </div>
-    <button type="button" class="btn-create-order" id="createOrderBtn">
-        <i class="bi bi-plus-circle"></i>
-        <span>Create Order</span>
-    </button>
-</div>
-
 <!-- Summary Cards -->
 <div class="summary-grid fade-in-up">
     <div class="summary-card">
@@ -774,11 +751,15 @@
 
 <!-- Orders Table Card -->
 <div class="orders-card fade-in-up">
-    <div class="card-header-custom">
+    <div class="card-header-custom" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; padding-bottom: 16px;">
         <h3>
             <i class="bi bi-table"></i>
             Order List
         </h3>
+        <button type="button" class="btn-create-order" id="createOrderBtn">
+        <i class="bi bi-plus-circle"></i>
+        <span>Create Order</span>
+    </button>
     </div>
 
     <!-- Filters Section -->
@@ -931,9 +912,6 @@
                                     </button>
                                     <button type="button" class="btn-action btn-print print-order-btn" data-order-id="{{ $order->id }}" title="Print Invoice">
                                         <i class="bi bi-printer"></i>
-                                    </button>
-                                    <button type="button" class="btn-action btn-delete delete-order-btn" data-order-id="{{ $order->id }}" title="Delete Order">
-                                        <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
                             </td>
