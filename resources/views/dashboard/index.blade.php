@@ -67,99 +67,107 @@
     <div class="tab-content">
         <!-- OVERVIEW -->
         <div class="tab-pane active" id="overview">
+            <!-- Charts Row 1 -->
             <div class="chart-grid">
                 <div class="chart-card">
                     <h3 class="chart-title"><i class="bi bi-fire" style="color: #ff6b6b;"></i> Top Selling Products</h3>
-                    <div id="topProductsChart" style="height: 300px;"></div>
+                    <div id="topProductsChart" style="height: 300px; position: relative; z-index: 2;"></div>
                 </div>
                 <div class="chart-card">
                     <h3 class="chart-title"><i class="bi bi-pie-chart-fill"></i> Stock Status</h3>
-                    <div id="stockStatusChart" style="height: 300px;"></div>
+                    <div id="stockStatusChart" style="height: 300px; position: relative; z-index: 2;"></div>
                 </div>
             </div>
 
+            <!-- Charts Row 2 -->
             <div class="chart-grid">
                 <div class="chart-card">
                     <h3 class="chart-title"><i class="bi bi-building"></i> Stock by Warehouse</h3>
-                    <div id="warehouseChart" style="height: 300px;"></div>
+                    <div id="warehouseChart" style="height: 300px; position: relative; z-index: 2;"></div>
                 </div>
                 <div class="chart-card">
                     <h3 class="chart-title"><i class="bi bi-tag-fill" style="color: #9b59b6;"></i> Products by Category</h3>
-                    <div id="categoryChart" style="height: 300px;"></div>
+                    <div id="categoryChart" style="height: 300px; position: relative; z-index: 2;"></div>
                 </div>
             </div>
 
-            <!-- Tables -->
+            <!-- Tables Row -->
             <div class="chart-grid" style="grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));">
+                <!-- Top Products Table -->
                 <div class="chart-card">
                     <h3 class="chart-title"><i class="bi bi-star-fill" style="color: #ffd700;"></i> Top Products</h3>
-                    <table class="stat-table">
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th style="text-align: right;">Sold</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($topSellingProducts->take(5) as $product)
+                    <div style="position: relative; z-index: 2; overflow-x: auto;">
+                        <table class="stat-table">
+                            <thead>
                                 <tr>
-                                    <td>
-                                        <strong>{{ Str::limit($product->name, 30) }}</strong><br>
-                                        <small class="text-muted">{{ $product->sku }}</small>
-                                    </td>
-                                    <td style="text-align: right;">
-                                        <span class="badge badge-success">{{ $product->sold_count ?? 0 }}</span>
-                                    </td>
+                                    <th>Product</th>
+                                    <th style="text-align: right;">Sold</th>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="2" class="text-center text-muted py-4">
-                                        <i class="bi bi-inbox" style="display: block; margin-bottom: 8px;"></i>
-                                        No sales data
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @forelse($topSellingProducts->take(5) as $product)
+                                    <tr>
+                                        <td>
+                                            <strong>{{ Str::limit($product->name, 30) }}</strong><br>
+                                            <small class="text-muted">{{ $product->sku }}</small>
+                                        </td>
+                                        <td style="text-align: right;">
+                                            <span class="badge badge-success">{{ $product->sold_count ?? 0 }}</span>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="2" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox" style="display: block; margin-bottom: 8px;"></i>
+                                            No sales data
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
+                <!-- Low Stock Items Table -->
                 <div class="chart-card">
                     <h3 class="chart-title"><i class="bi bi-exclamation-circle" style="color: #ef4444;"></i> Low Stock Items</h3>
-                    <table class="stat-table">
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th style="text-align: right;">Stock</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($lowStockProducts->take(5) as $product)
+                    <div style="position: relative; z-index: 2; overflow-x: auto;">
+                        <table class="stat-table">
+                            <thead>
                                 <tr>
-                                    <td>
-                                        <strong>{{ Str::limit($product->name, 30) }}</strong><br>
-                                        <small class="text-muted">{{ $product->sku }}</small>
-                                    </td>
-                                    <td style="text-align: right;">
-                                        <span class="badge badge-warning">{{ $product->total_stock }} units</span>
-                                    </td>
+                                    <th>Product</th>
+                                    <th style="text-align: right;">Stock</th>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="2" class="text-center text-muted py-4">
-                                        <i class="bi bi-check-circle" style="color: #34C759; display: block; margin-bottom: 8px;"></i>
-                                        All stocked well!
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                @forelse($lowStockProducts->take(5) as $product)
+                                    <tr>
+                                        <td>
+                                            <strong>{{ Str::limit($product->name, 30) }}</strong><br>
+                                            <small class="text-muted">{{ $product->sku }}</small>
+                                        </td>
+                                        <td style="text-align: right;">
+                                            <span class="badge badge-warning">{{ $product->total_stock }} units</span>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="2" class="text-center text-muted py-4">
+                                            <i class="bi bi-check-circle" style="color: #34C759; display: block; margin-bottom: 8px;"></i>
+                                            All stocked well!
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- ANALYTICS -->
         <div class="tab-pane" id="analytics">
-            <div class="mb-4">
+            <div class="mb-4" style="position: relative; z-index: 2;">
                 <h3 class="chart-title"><i class="bi bi-graph-up-arrow"></i> Advanced Analytics</h3>
                 <p class="text-muted mb-0">Detailed inventory performance metrics</p>
             </div>
@@ -167,23 +175,23 @@
             <div class="chart-grid">
                 <div class="chart-card">
                     <h3 class="chart-title">Sales Trend (Top 8 Products)</h3>
-                    <div id="salesTrendChart" style="height: 350px;"></div>
+                    <div id="salesTrendChart" style="height: 350px; position: relative; z-index: 2;"></div>
                 </div>
                 <div class="chart-card">
                     <h3 class="chart-title">Warehouse Stock Levels</h3>
-                    <div id="warehouseDetailChart" style="height: 350px;"></div>
+                    <div id="warehouseDetailChart" style="height: 350px; position: relative; z-index: 2;"></div>
                 </div>
             </div>
 
             <div class="chart-card">
                 <h3 class="chart-title">Category Performance</h3>
-                <div id="categoryDetailChart" style="height: 350px;"></div>
+                <div id="categoryDetailChart" style="height: 350px; position: relative; z-index: 2;"></div>
             </div>
         </div>
 
         <!-- INVENTORY -->
         <div class="tab-pane" id="inventory">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-3" style="position: relative; z-index: 2;">
                 <div>
                     <h3 style="margin: 0; color: #03624C; font-weight: 700; font-size: 20px;">
                         <i class="bi bi-box-seam" style="margin-right: 8px;"></i> Inventory Overview
@@ -191,11 +199,8 @@
                     <p class="text-muted mb-0 mt-1">Recent products in your catalog</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('products.create') }}" class="btn-primary-custom">
-                        <i class="bi bi-plus-lg"></i> Add Product
-                    </a>
                     <a href="{{ route('products.index') }}" class="btn-outline-custom">
-                        <i class="bi bi-arrow-right"></i> View All
+                       View All  <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>

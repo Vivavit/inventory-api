@@ -57,7 +57,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // SUPPLIER PURCHASE MANAGEMENT (ADMIN ONLY)
     Route::middleware('auth:sanctum')->group(function () {
-        Route::apiResource('supplier-purchases', SupplierPurchaseApiController::class);
+        Route::apiResource('supplier-purchases', SupplierPurchaseApiController::class)
+    ->names('api.supplier-purchases');
         Route::post('supplier-purchases/{purchase}/confirm', [SupplierPurchaseApiController::class, 'confirm']);
     });
 });

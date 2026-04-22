@@ -1,5 +1,14 @@
 :root {
-
+    --color-primary: var(--primary);
+    --color-accent: var(--primary-light);
+    --color-bg: var(--bg-primary);
+    --color-surface: var(--bg-secondary);
+    --color-surface-soft: var(--bg-tertiary);
+    --color-surface-strong: var(--bg-hover);
+    --color-text: var(--text-primary);
+    --color-text-secondary: var(--text-secondary);
+    --color-border: var(--border-color);
+    --color-border-strong: var(--border-color-strong);
 
     --sidebar-width: 250px;
     --sidebar-width-collapsed: 82px;
@@ -13,6 +22,7 @@
 
 html {
     scroll-behavior: smooth;
+    color-scheme: light;
 }
 
 html.dark {
