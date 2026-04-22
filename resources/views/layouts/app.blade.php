@@ -56,10 +56,6 @@
                     <i class="bi bi-clipboard-check"></i>
                     <span class="link-text">Purchase Orders</span>
                 </a>
-                <a href="{{ route('supplier-purchases.index') }}" class="{{ request()->is('supplier-purchases*') ? 'active' : '' }}" title="Supplier Purchases">
-                    <i class="bi bi-truck"></i>
-                    <span class="link-text">Supplier Purchases</span>
-                </a>
                 @endcan
             </div>
 
@@ -99,20 +95,20 @@
 
     <!-- TOP HEADER -->
     <div class="top-header" id="top-header">
-        <div style="display: flex; align-items: center; gap: 12px;">
+        <div class="top-header-title">
             <button class="hamburger-menu" id="hamburger-menu" aria-label="Toggle menu">
                 <span></span>
                 <span></span>
                 <span></span>
             </button>
             <div>
-                welcome back, <strong>{{ auth()->user()->name ?? 'User' }}</strong>
+                Welcome back, <strong>{{ auth()->user()->name ?? 'User' }}</strong>
             </div>
         </div>
         <div class="header-right">
             <div class="search-bar">
                 <i class="bi bi-search"></i>
-                <input type="text" placeholder="Search..." id="search-input" aria-label="Search products">
+                <input type="text" placeholder="Search products, orders, users..." id="search-input" aria-label="Search products">
             </div>
             <button class="header-icon-btn" id="notifications-btn" title="Notifications" aria-label="Notifications">
                 <i class="bi bi-bell"></i>
@@ -129,7 +125,9 @@
 
     <!-- MAIN CONTENT -->
     <div class="main-content" id="main-content">
-        @yield('content')
+        <div class="content-frame">
+            @yield('content')
+        </div>
     </div>
 
     <!-- SCRIPTS -->

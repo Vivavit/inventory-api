@@ -1,147 +1,223 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Tab switching
+document.addEventListener('DOMContentLoaded', () => {
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabPanes = document.querySelectorAll('.tab-pane');
+    const renderedCharts = new Map();
 
-    function switchTab(tabName) {
-        tabButtons.forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.getAttribute('data-tab') === tabName) btn.classList.add('active');
-        });
+    function getThemeMode() {
+        return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    }
 
-        tabPanes.forEach(pane => {
-            pane.classList.remove('active');
-            if (pane.id === tabName) pane.classList.add('active');
-        });
+    function getCSSVar(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
 
-        localStorage.setItem('activeDashboardTab', tabName);
-        if (tabName === 'overview' || tabName === 'analytics') {
-            setTimeout(initCharts, 100);
+    function getChartPalette() {
+        return [
+            getCSSVar('--primary'),
+            getCSSVar('--primary-light'),
+            '#34d399',
+            '#f59e0b',
+            '#f97316',
+            '#ef4444',
+            '#5eead4',
+            '#99f6e4',
+        ];
+    }
+
+    function destroyCharts() {
+        renderedCharts.forEach((chart) => chart.destroy());
+        renderedCharts.clear();
+    }
+
+    function renderChart(id, options) {
+        const target = document.getElementById(id);
+        if (!target || renderedCharts.has(id) || typeof ApexCharts === 'undefined') {
+            return;
+        }
+
+        const chart = new ApexCharts(target, options);
+        chart.render();
+        renderedCharts.set(id, chart);
+    }
+
+    function renderCharts() {
+        if (!window.DashboardData || typeof ApexCharts === 'undefined') {
+            return;
+        }
+
+        const primary = getCSSVar('--primary');
+        const primaryLight = getCSSVar('--primary-light');
+        const textPrimary = getCSSVar('--text-primary');
+        const textSecondary = getCSSVar('--text-secondary');
+        const borderColor = getCSSVar('--border-color');
+        const palette = getChartPalette();
+
+        const base = {
+            chart: {
+                toolbar: { show: false },
+                background: 'transparent',
+                animations: { enabled: true, easing: 'easeout', speed: 500 },
+            },
+            theme: { mode: getThemeMode() },
+            grid: { borderColor, strokeDashArray: 4 },
+            dataLabels: { enabled: false },
+            legend: {
+                position: 'bottom',
+                labels: { colors: textSecondary },
+            },
+            tooltip: {
+                theme: getThemeMode(),
+            },
+            xaxis: {
+                labels: { style: { colors: textSecondary } },
+            },
+            yaxis: {
+                labels: { style: { colors: textSecondary } },
+            },
+        };
+
+        const topProducts = window.DashboardData.topProducts || [];
+        if (topProducts.length) {
+            renderChart('topProductsChart', {
+                ...base,
+                chart: { ...base.chart, type: 'bar', height: 320 },
+                series: [{ name: 'Sold', data: topProducts.map((item) => item.count) }],
+                colors: [primary],
+                plotOptions: { bar: { borderRadius: 10, columnWidth: '56%' } },
+                xaxis: {
+                    ...base.xaxis,
+                    categories: topProducts.map((item) => item.name.length > 14 ? `${item.name.slice(0, 14)}…` : item.name),
+                },
+            });
+        }
+
+        const stockStatus = window.DashboardData.stockStatus || {};
+        if (Object.values(stockStatus).some((value) => value > 0)) {
+            renderChart('stockStatusChart', {
+                ...base,
+                chart: { ...base.chart, type: 'donut', height: 320 },
+                series: Object.values(stockStatus),
+                labels: Object.keys(stockStatus),
+                colors: [primary, '#f59e0b', '#ef4444'],
+                stroke: { colors: [getCSSVar('--bg-secondary')] },
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            size: '72%',
+                            labels: {
+                                show: true,
+                                total: {
+                                    show: true,
+                                    label: 'Total',
+                                    color: textSecondary,
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+        }
+
+        const warehouseData = window.DashboardData.warehouseData || {};
+        if (Object.keys(warehouseData).length) {
+            renderChart('warehouseChart', {
+                ...base,
+                chart: { ...base.chart, type: 'bar', height: 320 },
+                series: [{ name: 'Stock', data: Object.values(warehouseData) }],
+                colors: [primaryLight],
+                plotOptions: { bar: { borderRadius: 10, columnWidth: '52%' } },
+                xaxis: { ...base.xaxis, categories: Object.keys(warehouseData) },
+            });
+
+            renderChart('warehouseDetailChart', {
+                ...base,
+                chart: { ...base.chart, type: 'bar', height: 380 },
+                series: [{ name: 'Stock', data: Object.values(warehouseData) }],
+                colors: [primary],
+                plotOptions: { bar: { borderRadius: 10, columnWidth: '48%' } },
+                xaxis: { ...base.xaxis, categories: Object.keys(warehouseData) },
+            });
+        }
+
+        const categoryData = window.DashboardData.categoryData || {};
+        if (Object.keys(categoryData).length) {
+            renderChart('categoryChart', {
+                ...base,
+                chart: { ...base.chart, type: 'donut', height: 320 },
+                series: Object.values(categoryData),
+                labels: Object.keys(categoryData),
+                colors: palette,
+                stroke: { colors: [getCSSVar('--bg-secondary')] },
+            });
+
+            renderChart('categoryDetailChart', {
+                ...base,
+                chart: { ...base.chart, type: 'bar', height: 380 },
+                series: [{ name: 'Products', data: Object.values(categoryData) }],
+                colors: [primary],
+                plotOptions: { bar: { horizontal: true, borderRadius: 8 } },
+                xaxis: { ...base.xaxis, categories: Object.keys(categoryData) },
+            });
+        }
+
+        const topProductsDetail = window.DashboardData.topProductsDetail || [];
+        if (topProductsDetail.length) {
+            renderChart('salesTrendChart', {
+                ...base,
+                chart: { ...base.chart, type: 'area', height: 380 },
+                series: [{ name: 'Sales', data: topProductsDetail.map((item) => item.count) }],
+                colors: [primary],
+                stroke: { curve: 'smooth', width: 3 },
+                fill: {
+                    type: 'gradient',
+                    gradient: {
+                        opacityFrom: 0.34,
+                        opacityTo: 0.06,
+                    },
+                },
+                xaxis: {
+                    ...base.xaxis,
+                    categories: topProductsDetail.map((item) => item.name.length > 14 ? `${item.name.slice(0, 14)}…` : item.name),
+                },
+            });
         }
     }
 
-    tabButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            switchTab(this.getAttribute('data-tab'));
+    function switchTab(tabName) {
+        tabButtons.forEach((button) => {
+            button.classList.toggle('active', button.dataset.tab === tabName);
         });
+
+        tabPanes.forEach((pane) => {
+            pane.classList.toggle('active', pane.id === tabName);
+        });
+
+        localStorage.setItem('activeDashboardTab', tabName);
+        setTimeout(renderCharts, 80);
+    }
+
+    window.filterInventory = (event, filter) => {
+        document.querySelectorAll('.filter-tab').forEach((button) => {
+            button.classList.toggle('active', button === event.currentTarget);
+        });
+
+        document.querySelectorAll('.inventory-card').forEach((card) => {
+            const status = card.getAttribute('data-status');
+            card.style.display = filter === 'all' || status === filter ? '' : 'none';
+        });
+    };
+
+    tabButtons.forEach((button) => {
+        button.addEventListener('click', () => switchTab(button.dataset.tab));
     });
 
     const savedTab = localStorage.getItem('activeDashboardTab') || 'overview';
     switchTab(savedTab);
-    setTimeout(initCharts, 300);
 
-    // Filter inventory
-    window.filterInventory = function(event, filter) {
-        const buttons = document.querySelectorAll('.filter-tab');
-        const cards = document.querySelectorAll('.inventory-card');
+    const observer = new MutationObserver(() => {
+        destroyCharts();
+        setTimeout(renderCharts, 80);
+    });
 
-        buttons.forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active');
-
-        cards.forEach(card => {
-            const status = card.getAttribute('data-status');
-            card.style.display = (filter === 'all' || status === filter) ? 'block' : 'none';
-        });
-    };
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'style'] });
 });
-
-function initCharts() {
-    if (typeof ApexCharts === 'undefined' || !window.DashboardData) return;
-
-    const chartDefaults = {
-        chart: { toolbar: { show: false }, animations: { enabled: true, easing: 'easeout', speed: 800 }, background: 'transparent' },
-        theme: { mode: document.documentElement.classList.contains('dark') ? 'dark' : 'light' },
-        dataLabels: { enabled: false },
-        grid: { borderColor: 'var(--border-color)', strokeDashArray: 4 },
-        tooltip: { theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light', borderRadius: 8 }
-    };
-
-    try {
-        // Top Products
-        const topProducts = window.DashboardData.topProducts || [];
-        if (topProducts.length > 0 && !document.querySelector('#topProductsChart.apexcharts-canvas')) {
-            new ApexCharts(document.getElementById('topProductsChart'), {
-                ...chartDefaults, chart: { ...chartDefaults.chart, height: 300, type: 'bar' },
-                series: [{ name: 'Sold', data: topProducts.map(p => p.count) }],
-                xaxis: { categories: topProducts.map(p => p.name.length > 12 ? p.name.substring(0, 12) + '...' : p.name) },
-                colors: ['var(--primary)'],
-                plotOptions: { bar: { borderRadius: 8, columnWidth: '60%' } }
-            }).render();
-        }
-
-        // Stock Status
-        const stockStatus = window.DashboardData.stockStatus || {};
-        if (Object.values(stockStatus).some(v => v > 0) && !document.querySelector('#stockStatusChart.apexcharts-canvas')) {
-            new ApexCharts(document.getElementById('stockStatusChart'), {
-                ...chartDefaults, chart: { ...chartDefaults.chart, height: 300, type: 'donut' },
-                series: Object.values(stockStatus),
-                labels: Object.keys(stockStatus),
-                colors: ['#10B981', '#F59E0B', '#EF4444'],
-                plotOptions: { pie: { donut: { size: '70%', labels: { show: true, total: { show: true, label: 'Total' } } } } },
-                legend: { position: 'bottom', fontSize: '12px' }
-            }).render();
-        }
-
-        // Warehouse Chart
-        const warehouseData = window.DashboardData.warehouseData || {};
-        if (Object.keys(warehouseData).length > 0 && !document.querySelector('#warehouseChart.apexcharts-canvas')) {
-            new ApexCharts(document.getElementById('warehouseChart'), {
-                ...chartDefaults, chart: { ...chartDefaults.chart, height: 300, type: 'bar' },
-                series: [{ name: 'Stock', data: Object.values(warehouseData) }],
-                xaxis: { categories: Object.keys(warehouseData) },
-                colors: ['#3B82F6'],
-                plotOptions: { bar: { borderRadius: 8, columnWidth: '60%' } }
-            }).render();
-        }
-
-        // Category Chart
-        const categoryData = window.DashboardData.categoryData || {};
-        if (Object.keys(categoryData).length > 0 && !document.querySelector('#categoryChart.apexcharts-canvas')) {
-            new ApexCharts(document.getElementById('categoryChart'), {
-                ...chartDefaults, chart: { ...chartDefaults.chart, height: 300, type: 'pie' },
-                series: Object.values(categoryData),
-                labels: Object.keys(categoryData),
-                colors: ['var(--primary)', 'var(--primary-light)', '#2ecc71', '#3498db', '#9b59b6', '#f39c12', '#e74c3c', '#1abc9c', '#e67e22', '#95a5a6'],
-                legend: { position: 'bottom', fontSize: '12px' }
-            }).render();
-        }
-
-        // Analytics charts
-        const topProductsDetail = window.DashboardData.topProductsDetail || [];
-        if (topProductsDetail.length > 0 && !document.querySelector('#salesTrendChart.apexcharts-canvas')) {
-            new ApexCharts(document.getElementById('salesTrendChart'), {
-                ...chartDefaults, chart: { ...chartDefaults.chart, height: 350, type: 'area' },
-                series: [{ name: 'Sales', data: topProductsDetail.map(p => p.count) }],
-                xaxis: { categories: topProductsDetail.map(p => p.name.length > 12 ? p.name.substring(0, 12) + '...' : p.name) },
-                colors: ['var(--primary-light)'],
-                fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1, stops: [0, 90, 100] } },
-                stroke: { curve: 'smooth', width: 3 }
-            }).render();
-        }
-
-        const warehouseDetail = window.DashboardData.warehouseData || {};
-        if (Object.keys(warehouseDetail).length > 0 && !document.querySelector('#warehouseDetailChart.apexcharts-canvas')) {
-            new ApexCharts(document.getElementById('warehouseDetailChart'), {
-                ...chartDefaults, chart: { ...chartDefaults.chart, height: 350, type: 'column' },
-                series: [{ name: 'Stock', data: Object.values(warehouseDetail) }],
-                xaxis: { categories: Object.keys(warehouseDetail) },
-                colors: ['#16a085'],
-                plotOptions: { bar: { borderRadius: 8, columnWidth: '60%' } }
-            }).render();
-        }
-
-        const categoryDetail = window.DashboardData.categoryData || {};
-        if (Object.keys(categoryDetail).length > 0 && !document.querySelector('#categoryDetailChart.apexcharts-canvas')) {
-            new ApexCharts(document.getElementById('categoryDetailChart'), {
-                ...chartDefaults, chart: { ...chartDefaults.chart, height: 350, type: 'bar' },
-                series: [{ name: 'Products', data: Object.values(categoryDetail) }],
-                xaxis: { categories: Object.keys(categoryDetail) },
-                colors: ['#9b59b6'],
-                plotOptions: { bar: { borderRadius: 8, columnWidth: '60%' } }
-            }).render();
-        }
-
-    } catch (error) {
-        console.error('Chart error:', error);
-    }
-}

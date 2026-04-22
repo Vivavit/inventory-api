@@ -24,6 +24,109 @@
         --transition:   150ms ease;
     }
 
+    html.dark .po-page { color: #e5e7eb; }
+    html.dark .po-title,
+    html.dark .po-number,
+    html.dark .po-stat-value,
+    html.dark .po-meta-value,
+    html.dark .po-modal-title,
+    html.dark .po-field label,
+    html.dark .po-empty h4,
+    html.dark .po-confirm-body h5 { color: #f8fafc; }
+    html.dark .po-subtitle,
+    html.dark .po-stat-label,
+    html.dark .po-filter-label,
+    html.dark .po-search-icon,
+    html.dark .po-supplier,
+    html.dark .po-meta-label,
+    html.dark .po-creator,
+    html.dark .po-empty p,
+    html.dark .po-confirm-body p,
+    html.dark .text-muted { color: #94a3b8 !important; }
+    html.dark .po-stat,
+    html.dark .po-card,
+    html.dark .po-modal,
+    html.dark .po-item-row,
+    html.dark .receive-form {
+        background: #0f172a;
+        border-color: #334155;
+        box-shadow: none;
+    }
+    html.dark .po-card-head,
+    html.dark .po-card-foot,
+    html.dark .po-modal-hd,
+    html.dark .po-modal-ft,
+    html.dark .po-items-label,
+    html.dark .po-tabs { border-color: #1f2937; }
+    html.dark .po-card-foot { background: #111827; }
+    html.dark .po-search input,
+    html.dark .po-field input,
+    html.dark .po-field select,
+    html.dark .po-field textarea,
+    html.dark .po-status-select,
+    html.dark .po-item-total input,
+    html.dark .receive-form .form-control {
+        background: #020617;
+        border-color: #334155;
+        color: #f8fafc;
+    }
+    html.dark .po-search input::placeholder,
+    html.dark .po-field textarea::placeholder,
+    html.dark .receive-form .form-control::placeholder { color: #64748b; }
+    html.dark .po-field input:focus,
+    html.dark .po-field select:focus,
+    html.dark .po-field textarea:focus,
+    html.dark .po-search input:focus,
+    html.dark .po-status-select:focus,
+    html.dark .receive-form .form-control:focus {
+        border-color: #1d9e75;
+        box-shadow: 0 0 0 3px rgba(29, 158, 117, 0.22);
+    }
+    html.dark .po-tab { color: #94a3b8; }
+    html.dark .po-tab:hover { color: #f8fafc; }
+    html.dark .btn-po-ghost {
+        color: #e5e7eb;
+        border-color: #475569;
+    }
+    html.dark .btn-po-ghost:hover {
+        background: #1f2937;
+        border-color: #64748b;
+        color: #fff;
+    }
+    html.dark .btn-po-ghost.danger {
+        color: #fca5a5;
+        border-color: #7f1d1d;
+    }
+    html.dark .btn-po-ghost.danger:hover { background: rgba(127, 29, 29, 0.25); }
+    html.dark .btn-receive:hover {
+        background: #166534;
+        border-color: #22c55e;
+        color: #f0fdf4;
+    }
+    html.dark .po-alert.success {
+        background: rgba(21, 128, 61, 0.18);
+        color: #bbf7d0;
+        border-color: rgba(34, 197, 94, 0.35);
+    }
+    html.dark .po-alert.error {
+        background: rgba(127, 29, 29, 0.25);
+        color: #fecaca;
+        border-color: rgba(248, 113, 113, 0.4);
+    }
+    html.dark .po-empty-icon { background: #111827; }
+    html.dark .po-pagination .page-item .page-link {
+        background: #0f172a;
+        border-color: #334155;
+        color: #e5e7eb;
+    }
+    html.dark .po-pagination .page-item .page-link:hover:not(.active) {
+        background: #1e293b;
+        border-color: #64748b;
+    }
+    html.dark .po-confirm-body,
+    html.dark #receiveItemsContainer .row,
+    html.dark #receiveItemsContainer .d-flex { color: #e5e7eb; }
+
     /* ── Page layout ───────────────────────────────── */
     .po-page { padding: 28px 0 60px; }
 

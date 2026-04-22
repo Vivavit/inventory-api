@@ -8,16 +8,19 @@
 
 @section('content')
 
-{{-- Page Header --}}
-<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+<div class="page-shell">
+<section class="page-hero">
     <div>
-        <h1>Products</h1>
-        <p>Manage and organise your product inventory</p>
+        <p class="page-eyebrow">Catalog</p>
+        <h1 class="page-title">Products</h1>
+        <p class="page-subtitle">Manage product information, pricing, stock position, and quick edits from one consistent data table.</p>
     </div>
-    <button type="button" class="btn btn-primary btn-add-product">
-        <i class="bi bi-plus-lg"></i> Add Product
-    </button>
-</div>
+    <div class="page-actions">
+        <button type="button" class="btn btn-primary btn-add-product">
+            <i class="bi bi-plus-lg"></i> Add product
+        </button>
+    </div>
+</section>
 
 {{-- Table --}}
 <div class="products-card">
@@ -100,6 +103,7 @@
             </button>
         </div>
     @endif
+</div>
 </div>
 
 {{-- ============================================================

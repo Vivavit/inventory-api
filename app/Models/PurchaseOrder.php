@@ -21,6 +21,7 @@ class PurchaseOrder extends Model
         'tax_amount',
         'shipping_cost',
         'total_amount',
+        'payment_terms',
         'notes',
         'created_by',
     ];

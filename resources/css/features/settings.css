@@ -1,0 +1,66 @@
+.settings-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3xl);
+}
+
+.settings-panel {
+    padding: var(--spacing-2xl);
+}
+
+.settings-form-grid {
+    display: grid;
+    gap: var(--spacing-2xl);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-note {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-color);
+    background: linear-gradient(180deg, var(--bg-secondary), var(--bg-tertiary));
+}
+
+.settings-note-icon {
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-size: 18px;
+}
+
+.accent-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+.accent-chip {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color-strong);
+    color: var(--text-primary);
+}
+
+.accent-chip.active {
+    background: linear-gradient(180deg, var(--primary), var(--primary-dark));
+    border-color: var(--primary);
+    color: var(--text-inverse);
+}
+
+.settings-select,
+.settings-page .form-select {
+    min-height: 48px;
+}
+
+@media (max-width: 992px) {
+    .settings-form-grid {
+        grid-template-columns: 1fr;
+    }
+}

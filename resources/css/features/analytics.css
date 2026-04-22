@@ -209,11 +209,9 @@
 .bg-danger { 
     background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
 }
-.bg-primary { 
-    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
-}
+.bg-primary,
 .bg-blue { 
-    background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
 }
 .bg-success { 
     background: linear-gradient(135deg, #10B981 0%, #059669 100%);

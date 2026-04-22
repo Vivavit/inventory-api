@@ -149,6 +149,42 @@
         border-radius: 8px;
         margin-top: 16px;
     }
+
+    html.dark .detail-card,
+    html.dark .item-table,
+    html.dark .receive-form {
+        background: #0f172a;
+        border-color: #334155;
+        box-shadow: none;
+        color: #e5e7eb;
+    }
+    html.dark .card-header-custom {
+        background: linear-gradient(135deg, #111827, #0f172a);
+        border-color: #334155;
+    }
+    html.dark .card-header-custom h5,
+    html.dark .info-label,
+    html.dark .info-value,
+    html.dark .item-table th,
+    html.dark .item-table td {
+        color: #f8fafc;
+    }
+    html.dark .info-row,
+    html.dark .item-table td {
+        border-color: #1f2937;
+    }
+    html.dark .item-table th {
+        background: #111827;
+    }
+    html.dark .item-table tbody tr:hover {
+        background: #111827;
+    }
+    html.dark .btn-back {
+        background: #334155;
+    }
+    html.dark .btn-back:hover {
+        background: #475569;
+    }
 </style>
 
 <div class="container-fluid">

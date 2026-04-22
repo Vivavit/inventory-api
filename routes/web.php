@@ -134,17 +134,6 @@ Route::middleware('auth')->group(function () {
         Route::patch('purchase-orders/{purchaseOrder}/status', [\App\Http\Controllers\PurchaseOrderController::class, 'updateStatus'])->name('purchase-orders.update-status');
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Supplier Purchase Management
-    |--------------------------------------------------------------------------
-    */
-    Route::middleware('permission:manage-inventory')->group(function () {
-        Route::resource('supplier-purchases', \App\Http\Controllers\SupplierPurchaseController::class, ['parameters' => ['supplier-purchases' => 'purchase']]);
-        Route::get('supplier-purchases/product-history/{product}', [\App\Http\Controllers\SupplierPurchaseController::class, 'productHistory'])->name('supplier-purchases.product-history');
-        Route::post('supplier-purchases/{purchase}/confirm', [\App\Http\Controllers\SupplierPurchaseController::class, 'confirm'])->name('supplier-purchases.confirm');
-    });
-
     Route::get('/images/{path}', function ($path) {
         $fullPath = storage_path('app/public/products/'.$path);
 

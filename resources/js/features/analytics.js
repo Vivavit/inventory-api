@@ -1,9 +1,8 @@
 /**
  * Inventory Analytics Dashboard
- * Modern, modular implementation with Alpine.js and Chart.js
  */
 
-import Alpine from 'alpinejs';
+const Alpine = window.Alpine;
 
 // Theme Color Manager
 class ThemeColorManager {
@@ -24,11 +23,11 @@ class ThemeColorManager {
     }
 
     getPrimaryColor() {
-        return this.isDark ? '#0fb9b1' : '#0D9488';
+        return this.getComputedVar('--primary') || '#0D9488';
     }
 
     getSecondaryColor() {
-        return '#6366F1';
+        return this.getComputedVar('--primary-light') || '#2DD4BF';
     }
 
     getTextColor() {
@@ -49,8 +48,14 @@ class ThemeColorManager {
 
     getChartColors() {
         return [
-            '#0fb9b1', '#0D9488', '#3b82f6', '#f59e0b',
-            '#8b5cf6', '#ef4444', '#10b981', '#6366f1'
+            this.getPrimaryColor(),
+            this.getSecondaryColor(),
+            '#34d399',
+            '#f59e0b',
+            '#f97316',
+            '#ef4444',
+            '#5eead4',
+            '#99f6e4'
         ];
     }
 }
@@ -173,6 +178,9 @@ class AnalyticsAPI {
 
 // Alpine.js Application
 document.addEventListener('alpine:init', () => {
+    if (!Alpine) {
+        return;
+    }
     Alpine.data('analyticsApp', () => ({
         // State
         activePeriod: window.ANALYTICS_CONFIG?.initialPeriod || 'month',
@@ -276,7 +284,7 @@ document.addEventListener('alpine:init', () => {
                     label: 'This Month',
                     value: kpis.total_sales_month || 0,
                     icon: 'bi-calendar-check',
-                    colorClass: 'blue',
+                    colorClass: 'primary',
                     subtitle: 'Monthly revenue',
                     trend: this.calculateTrend('sales_monthly'),
                     trendDirection: this.getTrendDirection('sales_monthly')
@@ -675,5 +683,3 @@ document.addEventListener('alpine:init', () => {
     }));
 });
 
-// Initialize Alpine
-Alpine.start();

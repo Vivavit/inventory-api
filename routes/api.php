@@ -6,9 +6,9 @@ use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\ProductApiController;
-use App\Http\Controllers\Api\SupplierPurchaseApiController;
 use App\Http\Controllers\Api\WarehouseApiController;
 use App\Http\Controllers\Api\WarehouseInventoryController;
+use App\Http\Controllers\Api\PurchaseOrderApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -53,12 +53,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/warehouse-inventory/add', [WarehouseInventoryController::class, 'addProductToWarehouse']);
         Route::get('/warehouse-inventory/{warehouseId}', [WarehouseInventoryController::class, 'getWarehouseInventory']);
         Route::put('/warehouse-inventory/{warehouseId}/product/{productId}', [WarehouseInventoryController::class, 'updateProductQuantity']);
+        Route::get('/purchase-orders', [PurchaseOrderApiController::class, 'index']);
+        Route::post('/purchase-orders', [PurchaseOrderApiController::class, 'store']);
+        Route::get('/purchase-orders/{purchaseOrder}', [PurchaseOrderApiController::class, 'show']);
+        Route::put('/purchase-orders/{purchaseOrder}', [PurchaseOrderApiController::class, 'update']);
+        Route::delete('/purchase-orders/{purchaseOrder}', [PurchaseOrderApiController::class, 'destroy']);
+        Route::post('/purchase-orders/{purchaseOrder}/receive', [PurchaseOrderApiController::class, 'receive']);
+        Route::patch('/purchase-orders/{purchaseOrder}/status', [PurchaseOrderApiController::class, 'updateStatus']);
     });
 
-    // SUPPLIER PURCHASE MANAGEMENT (ADMIN ONLY)
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::apiResource('supplier-purchases', SupplierPurchaseApiController::class)
-    ->names('api.supplier-purchases');
-        Route::post('supplier-purchases/{purchase}/confirm', [SupplierPurchaseApiController::class, 'confirm']);
-    });
+    // User's Purchase Orders (STAFF + ADMIN)
+    Route::get('/my-purchase-orders', [PurchaseOrderApiController::class, 'myOrders']);
 });

@@ -127,6 +127,47 @@
         background: #218838;
         transform: translateY(-1px);
     }
+
+    html.dark .form-card,
+    html.dark .item-row {
+        background: #0f172a;
+        border-color: #334155;
+        box-shadow: none;
+    }
+    html.dark .form-section {
+        border-color: #1f2937;
+    }
+    html.dark .section-title,
+    html.dark label,
+    html.dark .form-label,
+    html.dark h2,
+    html.dark h3,
+    html.dark h4,
+    html.dark h5,
+    html.dark h6 {
+        color: #f8fafc;
+    }
+    html.dark .text-muted,
+    html.dark .small {
+        color: #94a3b8 !important;
+    }
+    html.dark input,
+    html.dark select,
+    html.dark textarea {
+        background: #020617 !important;
+        color: #f8fafc !important;
+        border-color: #334155 !important;
+    }
+    html.dark input::placeholder,
+    html.dark textarea::placeholder {
+        color: #64748b;
+    }
+    html.dark .btn-cancel {
+        background: #334155;
+    }
+    html.dark .btn-cancel:hover {
+        background: #475569;
+    }
 </style>
 
 <div class="container-fluid">

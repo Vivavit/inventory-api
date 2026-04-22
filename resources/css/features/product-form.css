@@ -1,0 +1,92 @@
+.product-form-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3xl);
+}
+
+.product-form-grid {
+    display: grid;
+    gap: var(--spacing-2xl);
+    grid-template-columns: minmax(0, 2fr) minmax(320px, 0.95fr);
+}
+
+.product-form-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2xl);
+}
+
+.section-heading {
+    margin: 0 0 var(--spacing-lg);
+    color: var(--primary);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.image-upload-area {
+    border: 1.5px dashed var(--border-color-strong);
+    border-radius: var(--radius-xl);
+    padding: 36px 20px;
+    background: linear-gradient(180deg, var(--bg-tertiary), var(--bg-secondary));
+    text-align: center;
+    cursor: pointer;
+    transition: border-color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.image-upload-area:hover {
+    border-color: var(--primary);
+    background: linear-gradient(180deg, var(--primary-soft), var(--bg-secondary));
+}
+
+.preview-box {
+    width: 180px;
+    height: 180px;
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-color);
+}
+
+.preview-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.stock-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.stock-table th,
+.stock-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid var(--divider);
+    color: var(--text-primary);
+}
+
+.stock-table th {
+    color: var(--text-secondary);
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.stock-table tr:last-child td {
+    border-bottom: none;
+}
+
+.tip-panel {
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-color);
+    background: linear-gradient(180deg, var(--bg-secondary), var(--bg-tertiary));
+}
+
+@media (max-width: 1080px) {
+    .product-form-grid {
+        grid-template-columns: 1fr;
+    }
+}

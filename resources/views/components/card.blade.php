@@ -4,8 +4,8 @@
 ])
 
 @php
-    $baseClasses = 'bg-white rounded-xl p-6 border border-gray-200 shadow-sm transition-all duration-200';
-    $hoverClasses = $hover ? 'hover:shadow-lg hover:-translate-y-1' : '';
+    $baseClasses = 'surface-card';
+    $hoverClasses = $hover ? 'surface-card--soft' : '';
     $classes = $baseClasses . ' ' . $hoverClasses . ' ' . $class;
 @endphp
 

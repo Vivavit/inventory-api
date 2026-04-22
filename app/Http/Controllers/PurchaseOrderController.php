@@ -2,251 +2,256 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\InventoryLocation;
-use App\Models\InventoryTransaction;
 use App\Models\Product;
 use App\Models\PurchaseOrder;
-use App\Models\Supplier;
-use App\Models\Warehouse;
-use App\Models\WarehouseProduct;
+use App\Services\PurchaseOrderService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class PurchaseOrderController extends Controller
 {
-    public function index()
+    public function __construct(private readonly PurchaseOrderService $purchaseOrderService)
     {
-        $orders = PurchaseOrder::with(['supplier', 'creator', 'items.product'])
-            ->latest()
-            ->paginate(20);
-
-        $suppliers = Supplier::where('is_active', true)->get();
-        $products = Product::where('is_active', true)->get();
-        $warehouses = Warehouse::where('is_active', true)->get();
-
-        return view('purchase-orders.index', compact('orders', 'suppliers', 'products', 'warehouses'));
     }
 
+    /**
+     * Display a listing of purchase orders
+     */
+    public function index(Request $request)
+    {
+        $search = $request->query('search');
+        $status = $request->query('status');
+
+        $orders = $this->purchaseOrderService
+            ->applyFilters($this->purchaseOrderService->query(), $search, $status)
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
+
+        $dependencies = $this->purchaseOrderService->getFormDependencies();
+
+        return view('purchase-orders.index', array_merge($dependencies, compact('orders', 'search', 'status')));
+    }
+
+    /**
+     * Show the form for creating a new purchase order
+     */
     public function create()
     {
-        $suppliers = Supplier::where('is_active', true)->get();
-        $products = Product::where('is_active', true)->get();
-        $warehouses = Warehouse::where('is_active', true)->get();
-
-        return view('purchase-orders.create', compact('suppliers', 'products', 'warehouses'));
+        return view('purchase-orders.create', $this->purchaseOrderService->getFormDependencies());
     }
 
+    /**
+     * Store a newly created purchase order
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
             'warehouse_id' => 'required|exists:warehouses,id',
+            'status' => 'nullable|in:draft,pending',
             'order_date' => 'required|date',
             'expected_delivery_date' => 'nullable|date|after_or_equal:order_date',
+            'shipping_cost' => 'nullable|numeric|min:0',
+            'payment_terms' => 'nullable|string|max:50',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
-            'items.*.variant_id' => 'nullable|exists:product_variants,id',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
         ]);
 
         try {
-            DB::beginTransaction();
+            $order = $this->purchaseOrderService->create($validated);
 
-            // Generate PO number
-            $poNumber = 'PO-'.date('Ymd').'-'.strtoupper(uniqid());
-
-            // Calculate totals
-            $subtotal = 0;
-            foreach ($validated['items'] as $item) {
-                $subtotal += $item['quantity'] * $item['unit_price'];
+            if ($request->ajax()) {
+                return response()->json(['success' => true, 'id' => $order->id]);
             }
-
-            $taxAmount = $request->tax_amount ?? 0;
-            $shippingCost = $request->shipping_cost ?? 0;
-            $totalAmount = $subtotal + $taxAmount + $shippingCost;
-
-            // Create purchase order
-            $order = PurchaseOrder::create([
-                'po_number' => $poNumber,
-                'supplier_id' => $validated['supplier_id'],
-                'warehouse_id' => $validated['warehouse_id'],
-                'order_date' => $validated['order_date'],
-                'expected_delivery_date' => $validated['expected_delivery_date'] ?? null,
-                'notes' => $validated['notes'],
-                'subtotal' => $subtotal,
-                'tax_amount' => $taxAmount,
-                'shipping_cost' => $shippingCost,
-                'total_amount' => $totalAmount,
-                'created_by' => auth()->id(),
-                'status' => 'draft',
-            ]);
-
-            // Add items
-            foreach ($validated['items'] as $item) {
-                $order->items()->create([
-                    'product_id' => $item['product_id'],
-                    'product_variant_id' => $item['variant_id'] ?? null,
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $item['unit_price'],
-                    'total_price' => $item['quantity'] * $item['unit_price'],
-                    'received_quantity' => 0,
-                ]);
-            }
-
-            DB::commit();
 
             return redirect()->route('purchase-orders.show', $order)
                 ->with('success', 'Purchase order created successfully!');
 
         } catch (\Exception $e) {
-            DB::rollBack();
+            if ($request->ajax()) {
+                return response()->json(['message' => 'Failed to create purchase: ' . $e->getMessage()], 422);
+            }
 
-            return back()->with('error', 'Failed to create purchase order: '.$e->getMessage())->withInput();
+            return back()->with('error', 'Failed to create purchase order: ' . $e->getMessage())->withInput();
         }
     }
 
-    public function show(PurchaseOrder $purchaseOrder)
+    /**
+     * Display the specified purchase order
+     */
+    public function show(Request $request, PurchaseOrder $purchaseOrder)
     {
-        $purchaseOrder->load([
-            'supplier',
-            'creator',
-            'items.product',
-            'items.variant',
-        ]);
+        if ($request->ajax()) {
+            return response()->json($this->purchaseOrderService->toDetailPayload($purchaseOrder));
+        }
+
+        $purchaseOrder->load(['supplier', 'creator', 'items.product', 'warehouse']);
 
         return view('purchase-orders.show', compact('purchaseOrder'));
     }
 
+    /**
+     * Show the form for editing the specified purchase order
+     */
+    public function edit(PurchaseOrder $purchaseOrder, Request $request)
+    {
+        if ($purchaseOrder->status !== 'pending') {
+            if ($request->ajax()) {
+                return response()->json(['message' => 'Only pending purchase orders can be edited.'], 422);
+            }
+            return back()->with('error', 'Only pending purchase orders can be edited.');
+        }
+
+        $purchaseOrder->load(['items.product']);
+        $dependencies = $this->purchaseOrderService->getFormDependencies();
+
+        if ($request->ajax()) {
+            return response()->json(array_merge(['purchaseOrder' => $purchaseOrder], $dependencies));
+        }
+
+        return view('purchase-orders.edit', array_merge(['purchaseOrder' => $purchaseOrder], $dependencies));
+    }
+
+    /**
+     * Update the specified purchase order
+     */
+    public function update(Request $request, PurchaseOrder $purchaseOrder)
+    {
+        if ($purchaseOrder->status !== 'pending') {
+            if ($request->ajax()) {
+                return response()->json(['message' => 'Only pending purchase orders can be updated.'], 422);
+            }
+            return back()->with('error', 'Only pending purchase orders can be updated.');
+        }
+
+        $validated = $request->validate([
+            'supplier_id' => 'required|exists:suppliers,id',
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'order_date' => 'required|date',
+            'expected_delivery_date' => 'nullable|date|after_or_equal:order_date',
+            'shipping_cost' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
+        ]);
+
+        try {
+            $purchaseOrder = $this->purchaseOrderService->update($purchaseOrder, $validated);
+
+            if ($request->ajax()) {
+                return response()->json(['success' => true, 'id' => $purchaseOrder->id]);
+            }
+
+            return redirect()->route('purchase-orders.index')
+                ->with('success', "Purchase order {$purchaseOrder->po_number} updated successfully!");
+
+        } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json(['message' => 'Failed to update purchase: ' . $e->getMessage()], 422);
+            }
+
+            return back()->with('error', 'Failed to update purchase: ' . $e->getMessage())->withInput();
+        }
+    }
+
     public function receive(Request $request, PurchaseOrder $purchaseOrder)
     {
-        if (! in_array($purchaseOrder->status, ['ordered', 'partially_received'])) {
+        if (! in_array($purchaseOrder->status, ['ordered', 'partially_received'], true)) {
             return back()->with('error', 'Only ordered or partially received orders can be received.');
         }
 
         $validated = $request->validate([
-            'items' => 'required|array',
-            'items.*.id' => 'required|exists:purchase_order_items,id',
-            'items.*.received' => 'required|integer|min:0',
             'warehouse_id' => 'required|exists:warehouses,id',
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'required|integer|exists:purchase_order_items,id',
+            'items.*.received' => 'required|integer|min:0',
         ]);
+
+        if ((int) $validated['warehouse_id'] !== (int) $purchaseOrder->warehouse_id) {
+            return back()->with('error', 'Warehouse mismatch for this purchase order.');
+        }
 
         try {
-            DB::beginTransaction();
+            $this->purchaseOrderService->receive($purchaseOrder, $validated['items']);
 
-            $allReceived = true;
-            $orderReceived = 0;
-
-            foreach ($validated['items'] as $itemData) {
-                $item = $purchaseOrder->items()->findOrFail($itemData['id']);
-
-                $totalReceived = $item->received_quantity + $itemData['received'];
-
-                if ($totalReceived > $item->quantity) {
-                    throw new \Exception("Cannot receive more than ordered quantity for item: {$item->product->name}");
-                }
-
-                // Update received quantity
-                $item->update(['received_quantity' => $totalReceived]);
-                $orderReceived += $itemData['received'];
-
-                // If received quantity > 0, update inventory
-                if ($itemData['received'] > 0) {
-                    // Get or create inventory location
-                    $location = InventoryLocation::firstOrCreate(
-                        [
-                            'product_id' => $item->product_id,
-                            'warehouse_id' => $validated['warehouse_id'],
-                            'product_variant_id' => $item->product_variant_id,
-                        ],
-                        ['quantity' => 0, 'reserved_quantity' => 0]
-                    );
-
-                    // Update inventory
-                    $quantityBefore = $location->quantity;
-                    $quantityAfter = $quantityBefore + $itemData['received'];
-                    $location->update([
-                        'quantity' => $quantityAfter,
-                        'last_purchase_cost' => $item->unit_price,
-                        // Update average cost
-                        'average_cost' => $this->calculateAverageCost(
-                            $quantityBefore,
-                            $location->average_cost ?? 0,
-                            $itemData['received'],
-                            $item->unit_price
-                        ),
-                    ]);
-
-                    // Sync WarehouseProduct summary (used by Product::total_stock and stock checks)
-                    $totalQty = InventoryLocation::where('product_id', $item->product_id)
-                        ->where('warehouse_id', $validated['warehouse_id'])
-                        ->sum('quantity');
-                    WarehouseProduct::updateOrCreate(
-                        [
-                            'warehouse_id' => $validated['warehouse_id'],
-                            'product_id' => $item->product_id,
-                        ],
-                        ['quantity' => $totalQty]
-                    );
-
-                    // Create transaction record
-                    InventoryTransaction::create([
-                        'type' => 'purchase',
-                        'product_id' => $item->product_id,
-                        'warehouse_id' => $validated['warehouse_id'],
-                        'product_variant_id' => $item->product_variant_id,
-                        'quantity_change' => $itemData['received'],
-                        'quantity_before' => $quantityBefore,
-                        'quantity_after' => $quantityAfter,
-                        'user_id' => auth()->id(),
-                        'notes' => "Purchase order #{$purchaseOrder->po_number} receipt",
-                        'reference_type' => 'purchase_order',
-                        'reference_id' => $purchaseOrder->id,
-                    ]);
-                }
-
-                // Check if all items are fully received
-                if ($item->received_quantity < $item->quantity) {
-                    $allReceived = false;
-                }
-            }
-
-            // Update order status
-            $status = $allReceived ? 'received' : 'partially_received';
-            $purchaseOrder->update([
-                'status' => $status,
-                'actual_delivery_date' => $allReceived ? now() : null,
-            ]);
-
-            DB::commit();
-
-            return back()->with('success', "Received {$orderReceived} items successfully!");
-
+            return back()->with('success', 'Stock received successfully.');
         } catch (\Exception $e) {
-            DB::rollBack();
-
-            return back()->with('error', 'Failed to receive items: '.$e->getMessage());
+            return back()->with('error', 'Failed to receive stock: ' . $e->getMessage());
         }
     }
 
-    public function updateStatus(PurchaseOrder $purchaseOrder, Request $request)
+    public function updateStatus(Request $request, PurchaseOrder $purchaseOrder)
     {
         $validated = $request->validate([
-            'status' => 'required|in:pending,ordered,received,cancelled',
+            'status' => 'required|in:pending,ordered,cancelled',
         ]);
 
-        $purchaseOrder->update(['status' => $validated['status']]);
+        $allowedTransitions = [
+            'draft' => ['pending', 'ordered', 'cancelled'],
+            'pending' => ['ordered', 'cancelled'],
+        ];
 
-        return back()->with('success', 'Order status updated successfully!');
-    }
+        $currentStatus = $purchaseOrder->status;
+        $newStatus = $validated['status'];
 
-    private function calculateAverageCost($currentQty, $currentCost, $newQty, $newCost)
-    {
-        if ($currentQty + $newQty == 0) {
-            return 0;
+        if (! in_array($newStatus, $allowedTransitions[$currentStatus] ?? [], true)) {
+            return response()->json(['success' => false, 'message' => 'This status change is not allowed.'], 422);
         }
 
-        return (($currentQty * $currentCost) + ($newQty * $newCost)) / ($currentQty + $newQty);
+        $this->purchaseOrderService->updateStatus($purchaseOrder, $newStatus);
+
+        return response()->json(['success' => true, 'status' => $newStatus]);
+    }
+
+    /**
+     * Confirm the purchase order and increase stock
+     */
+    public function confirm(PurchaseOrder $purchaseOrder)
+    {
+        if ($purchaseOrder->status !== 'pending') {
+            return back()->with('error', 'Only pending purchase orders can be confirmed.');
+        }
+
+        if ($purchaseOrder->items->isEmpty()) {
+            return back()->with('error', 'Cannot confirm an empty purchase order.');
+        }
+
+        try {
+            $this->purchaseOrderService->confirm($purchaseOrder);
+
+            return back()->with('success', 'Purchase order confirmed and stock updated successfully!');
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to confirm purchase order: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Return product stock history for AJAX history modal
+     */
+    public function productHistory(Product $product)
+    {
+        return response()->json($this->purchaseOrderService->getProductHistory($product));
+    }
+
+    /**
+     * Remove the specified purchase order (pending only)
+     */
+    public function destroy(PurchaseOrder $purchaseOrder)
+    {
+        if ($purchaseOrder->status !== 'pending') {
+            return back()->with('error', 'Only pending purchase orders can be deleted.');
+        }
+
+        $poNumber = $purchaseOrder->po_number;
+        $purchaseOrder->delete();
+
+        return redirect()->route('purchase-orders.index')
+            ->with('success', "Purchase order {$poNumber} deleted successfully!");
     }
 }

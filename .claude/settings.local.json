@@ -7,7 +7,8 @@
       "Bash(./vendor/bin/pint --test)",
       "Bash(ls -la .env*)",
       "Bash(./vendor/bin/pint:*)",
-      "Bash(ls database/migrations/*product_image*.php)"
+      "Bash(ls database/migrations/*product_image*.php)",
+      "Bash(composer test *)"
     ]
   }
 }
