@@ -28,36 +28,50 @@ class PurchaseOrderApiController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): PurchaseOrderCollection
-    {
-        $user = Auth::user();
-        $warehouses = $user->warehouses()->pluck('id');
+public function index(Request $request): PurchaseOrderCollection
+{
+    $user = Auth::user();
+    $warehouses = $user->warehouses()->pluck('id');
 
-        $query = PurchaseOrder::with(['supplier', 'warehouse', 'creator', 'items.product', 'items.product.category', 'items.product.brand'])
-            ->when($user->user_type === 'staff', function ($q) use ($warehouses) {
-                $q->whereIn('warehouse_id', $warehouses);
-            })
-            ->when($request->filled('status'), function ($q) use ($request) {
-                $q->where('status', $request->status);
-            })
-            ->when($request->filled('supplier_id'), function ($q) use ($request) {
-                $q->where('supplier_id', $request->supplier_id);
-            })
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $q->where(function ($q2) use ($request) {
-                    $q2->where('po_number', 'like', '%' . $request->search . '%')
-                        ->orWhere('reference_number', 'like', '%' . $request->search . '%')
-                        ->orWhereHas('supplier', function ($q3) use ($request) {
-                            $q3->where('name', 'like', '%' . $request->search . '%');
-                        });
-                });
-            })
-            ->orderBy('created_at', 'desc');
+    $query = PurchaseOrder::select(
+            'id',
+            'po_number',
+            'supplier_id',
+            'warehouse_id',
+            'status',
+            'created_by',
+            'created_at'
+        )
+        ->with([
+            'supplier:id,name',
+            'warehouse:id,name',
+            'creator:id,name'
+        ])
+        ->withCount('items') // 👈 instead of loading all items
+        ->when($user->user_type === 'staff', function ($q) use ($warehouses) {
+            $q->whereIn('warehouse_id', $warehouses);
+        })
+        ->when($request->filled('status'), function ($q) use ($request) {
+            $q->where('status', $request->status);
+        })
+        ->when($request->filled('supplier_id'), function ($q) use ($request) {
+            $q->where('supplier_id', $request->supplier_id);
+        })
+        ->when($request->filled('search'), function ($q) use ($request) {
+            $q->where(function ($q2) use ($request) {
+                $q2->where('po_number', 'like', '%' . $request->search . '%')
+                    ->orWhere('reference_number', 'like', '%' . $request->search . '%')
+                    ->orWhereHas('supplier', function ($q3) use ($request) {
+                        $q3->where('name', 'like', '%' . $request->search . '%');
+                    });
+            });
+        })
+        ->orderBy('created_at', 'desc');
 
-        $perPage = $request->get('per_page', 15);
+    $perPage = $request->get('per_page', 15);
 
-        return new PurchaseOrderCollection($query->paginate($perPage));
-    }
+    return new PurchaseOrderCollection($query->paginate($perPage));
+}
 
     /**
      * Store a newly created resource in storage.
