@@ -44,19 +44,22 @@ class ProductApiController extends Controller
         }
         // For admin users, show all products (no warehouse filter)
 
-        $products = $productsQuery->get()->map(function ($product) use ($warehouseIds, $user, $warehouses) {
+        $products = $productsQuery->get()->map(function ($product) use ($warehouseIds, $user, $warehouses, $request) {
             $primaryImage = $product->primaryImage;
-            $imagePath = $primaryImage ? $primaryImage->image_path : 'products/default.jpg';
+            $imagePath = $primaryImage ? $primaryImage->image_path : null;
 
             // Normalize path: remove 'storage/' or 'public/' prefixes if present
-            $imagePath = preg_replace('/^(storage\/|public\/)/', '', $imagePath);
-
-            $fullPath = public_path('storage/'.$imagePath);
-            if (! file_exists($fullPath)) {
-                $imagePath = 'products/default.jpg';
+            if ($imagePath) {
+                $imagePath = preg_replace('/^(storage\/|public\/)/', '', $imagePath);
             }
 
-            $imageUrl = url('storage/'.$imagePath);
+            $imageExists = $imagePath
+                ? Storage::disk('public')->exists($imagePath)
+                : false;
+
+            $imageUrl = $imageExists
+                ? $request->getSchemeAndHttpHost().'/storage/'.$imagePath
+                : asset('images/product-default.svg');
 
             // Calculate stock
             if ($user->isAdmin()) {

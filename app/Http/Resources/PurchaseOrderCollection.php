@@ -14,6 +14,8 @@ class PurchaseOrderCollection extends ResourceCollection
      */
     public function toArray(Request $request): array
     {
+        $paginator = $this->resource;
+
         return [
             'success' => true,
             'message' => 'Purchase orders retrieved successfully',
@@ -43,18 +45,18 @@ class PurchaseOrderCollection extends ResourceCollection
                 ];
             }),
             'links' => [
-                'first' => $this->collection->firstPageUrl(),
-                'last' => $this->collection->lastPageUrl(),
-                'prev' => $this->collection->prevPageUrl(),
-                'next' => $this->collection->nextPageUrl(),
+                'first' => method_exists($paginator, 'firstPageUrl') ? $paginator->firstPageUrl() : null,
+                'last' => method_exists($paginator, 'lastPageUrl') ? $paginator->lastPageUrl() : null,
+                'prev' => method_exists($paginator, 'previousPageUrl') ? $paginator->previousPageUrl() : null,
+                'next' => method_exists($paginator, 'nextPageUrl') ? $paginator->nextPageUrl() : null,
             ],
             'meta' => [
-                'current_page' => $this->collection->currentPage(),
-                'last_page' => $this->collection->lastPage(),
-                'per_page' => $this->collection->perPage(),
-                'total' => $this->collection->total(),
-                'from' => $this->collection->from(),
-                'to' => $this->collection->to(),
+                'current_page' => method_exists($paginator, 'currentPage') ? $paginator->currentPage() : 1,
+                'last_page' => method_exists($paginator, 'lastPage') ? $paginator->lastPage() : 1,
+                'per_page' => method_exists($paginator, 'perPage') ? $paginator->perPage() : $this->collection->count(),
+                'total' => method_exists($paginator, 'total') ? $paginator->total() : $this->collection->count(),
+                'from' => method_exists($paginator, 'firstItem') ? $paginator->firstItem() : null,
+                'to' => method_exists($paginator, 'lastItem') ? $paginator->lastItem() : null,
             ],
         ];
     }

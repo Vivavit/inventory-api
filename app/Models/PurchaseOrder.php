@@ -58,6 +58,14 @@ class PurchaseOrder extends Model
     }
 
     /**
+     * Items received against this purchase order.
+     */
+    public function receivedItems()
+    {
+        return $this->hasMany(ReceivedItem::class, 'purchase_order_id');
+    }
+
+    /**
      * Receive stock for this purchase order
      * Updates warehouse product quantities and marks PO as received
      */

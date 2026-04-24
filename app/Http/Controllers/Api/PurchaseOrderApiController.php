@@ -31,7 +31,7 @@ class PurchaseOrderApiController extends Controller
 public function index(Request $request): PurchaseOrderCollection
 {
     $user = Auth::user();
-    $warehouses = $user->warehouses()->pluck('id');
+    $warehouses = $user->warehouses()->pluck('warehouses.id');
 
     $query = PurchaseOrder::select(
             'id',
@@ -122,10 +122,12 @@ public function index(Request $request): PurchaseOrderCollection
         try {
             DB::beginTransaction();
 
-            $purchaseOrder = $this->purchaseOrderService->createPurchaseOrder(
-                $request->all(),
-                $user
-            );
+            $payload = $request->all();
+            if (empty($payload['order_date'])) {
+                $payload['order_date'] = now()->toDateString();
+            }
+
+            $purchaseOrder = $this->purchaseOrderService->create($payload);
 
             DB::commit();
 
@@ -226,11 +228,22 @@ public function index(Request $request): PurchaseOrderCollection
         try {
             DB::beginTransaction();
 
-            $purchaseOrder = $this->purchaseOrderService->updatePurchaseOrder(
-                $purchaseOrder,
-                $request->all(),
-                $user
-            );
+            $payload = $request->all();
+            if (! array_key_exists('items', $payload)) {
+                $payload['items'] = $purchaseOrder->items()
+                    ->get(['product_id', 'quantity', 'unit_price'])
+                    ->map(fn ($item) => [
+                        'product_id' => $item->product_id,
+                        'quantity' => $item->quantity,
+                        'unit_price' => $item->unit_price,
+                    ])
+                    ->toArray();
+            }
+            if (empty($payload['order_date'])) {
+                $payload['order_date'] = optional($purchaseOrder->order_date)->toDateString() ?? now()->toDateString();
+            }
+
+            $purchaseOrder = $this->purchaseOrderService->update($purchaseOrder, $payload);
 
             DB::commit();
 
@@ -275,7 +288,7 @@ public function index(Request $request): PurchaseOrderCollection
         }
 
         try {
-            $this->purchaseOrderService->deletePurchaseOrder($purchaseOrder);
+            $purchaseOrder->delete();
 
             return response()->json([
                 'success' => true,
@@ -340,11 +353,12 @@ public function index(Request $request): PurchaseOrderCollection
         try {
             DB::beginTransaction();
 
-            $result = $this->purchaseOrderService->receiveStock(
-                $purchaseOrder,
-                $request->received_items,
-                $user
-            );
+            $items = collect($request->received_items)->map(fn ($item) => [
+                'id' => $item['item_id'],
+                'received' => $item['quantity'],
+            ])->toArray();
+
+            $result = $this->purchaseOrderService->receive($purchaseOrder, $items);
 
             DB::commit();
 
@@ -446,7 +460,7 @@ public function index(Request $request): PurchaseOrderCollection
             $query = PurchaseOrder::with(['supplier', 'warehouse', 'creator', 'items.product'])
                 ->orderBy('created_at', 'desc');
         } else {
-            $warehouses = $user->warehouses()->pluck('id');
+            $warehouses = $user->warehouses()->pluck('warehouses.id');
 
             $query = PurchaseOrder::with(['supplier', 'warehouse', 'creator', 'items.product'])
                 ->whereIn('warehouse_id', $warehouses)

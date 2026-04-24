@@ -138,7 +138,7 @@ Route::middleware('auth')->group(function () {
         $fullPath = storage_path('app/public/products/'.$path);
 
         if (! file_exists($fullPath)) {
-            $fullPath = storage_path('app/public/products/default.jpg');
+            $fullPath = public_path('images/product-default.svg');
         }
 
         $mimeType = mime_content_type($fullPath) ?: 'application/octet-stream';
