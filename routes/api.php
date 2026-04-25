@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ProductApiController;
 use App\Http\Controllers\Api\WarehouseApiController;
 use App\Http\Controllers\Api\WarehouseInventoryController;
 use App\Http\Controllers\Api\PurchaseOrderApiController;
+use App\Http\Controllers\Api\OrderApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -64,4 +65,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // User's Purchase Orders (STAFF + ADMIN)
     Route::get('/my-purchase-orders', [PurchaseOrderApiController::class, 'myOrders']);
+
+    // ORDERS (Mobile App - Customer + Admin/Staff)
+    Route::get('/orders', [OrderApiController::class, 'index'])
+        ->middleware('permission:view-orders,sanctum');
+    Route::get('/orders/{id}', [OrderApiController::class, 'show']);
+    Route::patch('/orders/{id}/status', [OrderApiController::class, 'updateStatus'])
+        ->middleware('permission:manage-orders,sanctum');
+    Route::get('/orders/stats', [OrderApiController::class, 'stats'])
+        ->middleware('permission:view-analytics,sanctum');
+
+    // Customer orders (mobile app)
+    Route::get('/my-orders', [OrderApiController::class, 'myOrders']);
+    Route::post('/orders', [OrderApiController::class, 'store']); // Create order
+    Route::post('/orders/{id}/cancel', [OrderApiController::class, 'cancel']);
 });
