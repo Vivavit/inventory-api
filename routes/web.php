@@ -34,6 +34,14 @@ Route::get('/debug-products', function () {
         ->index(request());
 });
 
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toISOString(),
+        'server' => 'running'
+    ]);
+})->name('health');
+
 /*
 |--------------------------------------------------------------------------
 | Authentication

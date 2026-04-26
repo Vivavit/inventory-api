@@ -1,0 +1,16 @@
+{
+  "name": "render-keep-alive",
+  "version": "1.0.0",
+  "description": "Keep Render server awake by sending periodic requests",
+  "main": "keep-alive.js",
+  "scripts": {
+    "start": "node keep-alive.js",
+    "dev": "node keep-alive.js"
+  },
+  "keywords": ["render", "keep-alive", "server", "ping"],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
