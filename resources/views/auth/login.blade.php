@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         * { box-sizing: border-box; }
@@ -344,14 +345,14 @@
             <label class="form-label">Email</label>
             <div class="input-group-custom">
                 <i class="bi bi-envelope"></i>
-                <input type="email" name="email" value="{{ old('email') }}" placeholder="Enter your email address" required autofocus class="flex-1 border-none bg-transparent px-2.5 py-3 text-sm text-gray-900 outline-none">
+                <input type="email" name="email" value="{{ old('email') }}" placeholder="Enter your email address" required autofocus>
             </div>
 
             {{-- Password --}}
             <label class="form-label">Password</label>
             <div class="input-group-custom">
                 <i class="bi bi-lock"></i>
-                <input type="password" name="password" id="password" placeholder="••••••••••••" required class="flex-1 border-none bg-transparent px-2.5 py-3 text-sm text-gray-900 outline-none">
+                <input type="password" name="password" id="password" placeholder="••••••••••••" required>
                 <button type="button" class="toggle-pw" onclick="togglePassword()" id="toggleIcon">
                     <i class="bi bi-eye" id="eyeIcon"></i>
                 </button>
