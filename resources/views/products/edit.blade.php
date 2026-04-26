@@ -170,7 +170,7 @@
                     {{-- Preview Container: Loads current image by default --}}
                     <div id="imagePreviewContainer" class="mt-3 {{ $product->images->count() > 0 ? '' : 'd-none' }} text-center">
                         <div class="preview-box mb-2">
-                            <img id="imagePreview" src="{{ $product->images->count() > 0 ? Storage::url($product->images->first()->image_path) : '' }}">
+                            <img id="imagePreview" src="{{ $product->images->count() > 0 ? asset('storage/' . $product->images->first()->image_path) : '' }}">
                             <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0 m-1" onclick="removeImage()">
                                 <i class="bi bi-x"></i>
                             </button>

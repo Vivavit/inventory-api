@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class Product extends Model
@@ -32,6 +33,7 @@ class Product extends Model
         'meta_description',
         'views_count',
         'sold_count',
+        'image_path', // Add image_path for direct image reference
     ];
 
     protected $casts = [
@@ -104,6 +106,20 @@ class Product extends Model
         }
 
         return 'in_stock';
+    }
+
+    public function getImageUrlAttribute()
+    {
+        if ($this->image_path) {
+            return Storage::url($this->image_path);
+        }
+        
+        // Fallback to primary image from relationship
+        if ($this->primaryImage) {
+            return Storage::url($this->primaryImage->image_path);
+        }
+        
+        return asset('images/product-default.svg');
     }
 
     protected static function boot()

@@ -58,7 +58,7 @@ class ProductApiController extends Controller
                 : false;
 
             $imageUrl = $imageExists
-                ? $request->getSchemeAndHttpHost().'/storage/'.$imagePath
+                ? asset('storage/'.$imagePath)
                 : asset('images/product-default.svg');
 
             // Calculate stock
