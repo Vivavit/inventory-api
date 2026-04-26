@@ -332,3 +332,29 @@ html.dark .form-section {
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
 }
+
+/* Add to products.css */
+.modal-dialog-scrollable .modal-body {
+    overflow-y: auto;
+    max-height: calc(100vh - 200px);
+}
+
+.modal-xl {
+    max-width: 95%;
+}
+
+@media (min-width: 1200px) {
+    .modal-xl {
+        max-width: 1140px;
+    }
+}
+
+/* Ensure form sections don't overflow */
+.form-section {
+    overflow: visible;
+}
+
+.modal-body .row {
+    margin-right: 0;
+    margin-left: 0;
+}

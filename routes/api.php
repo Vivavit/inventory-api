@@ -49,6 +49,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/analytics/trending', [AnalyticsController::class, 'trending']);
     });
 
+    Route::get('/analytics/{period}', [App\Http\Controllers\Api\AnalyticsController::class, 'show']);
+
     // WAREHOUSE INVENTORY MANAGEMENT (ADMIN ONLY)
     Route::middleware('permission:manage-inventory,sanctum')->group(function () {
         Route::post('/warehouse-inventory/add', [WarehouseInventoryController::class, 'addProductToWarehouse']);

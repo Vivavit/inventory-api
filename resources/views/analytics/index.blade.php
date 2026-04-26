@@ -253,6 +253,9 @@
 @endsection
 
 @push('scripts')
+    <script>
+        window.ANALYTICS_CONFIG = { initialPeriod: 'month' };
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     @vite(['resources/js/features/analytics.js'])
 @endpush

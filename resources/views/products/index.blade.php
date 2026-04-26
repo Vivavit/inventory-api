@@ -16,7 +16,7 @@
         <p class="page-subtitle">Manage product information, pricing, stock position, and quick edits from one consistent data table.</p>
     </div>
     <div class="page-actions">
-        <button type="button" class="btn btn-primary btn-add-product">
+        <button type="button" class="btn btn-primary" data-action="create">
             <i class="bi bi-plus-lg"></i> Add product
         </button>
     </div>
@@ -77,12 +77,15 @@
                             <td><span class="price-val">${{ number_format($product->price,2) }}</span></td>
                             <td style="text-align:right;">
                                 <div class="action-buttons">
-                                    <a href="{{ route('products.show', $product) }}" class="btn btn-primary btn-sm btn-icon" title="View"><i class="bi bi-eye"></i></a>
-                                    <button type="button" class="btn btn-outline btn-sm btn-icon btn-edit-product" data-id="{{ $product->id }}" title="Edit"><i class="bi bi-pencil"></i></button>
-                                    <form action="{{ route('products.destroy', $product) }}" method="POST" style="display:inline;" data-product-name="{{ $product->name }}">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Delete"><i class="bi bi-trash"></i></button>
-                                    </form>
+                                    <button type="button" class="btn btn-primary btn-sm btn-icon" data-action="view" data-id="{{ $product->id }}" title="View">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline btn-sm btn-icon" data-action="edit" data-id="{{ $product->id }}" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-danger btn-sm btn-icon" data-action="delete" data-id="{{ $product->id }}" data-name="{{ $product->name }}" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -314,6 +317,61 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+{{-- Add this view modal after your edit modal --}}
+<div class="modal fade" id="viewProductModal" tabindex="-1" aria-labelledby="viewProductModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewProductModalLabel">
+                    <i class="bi bi-eye me-2"></i>Product Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="viewProductContent">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading product details...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary btn-edit-from-view">
+                    <i class="bi bi-pencil"></i> Edit
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirm Delete
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="deleteProductName"></strong>?</p>
+                <p class="text-danger mb-0"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteProductForm" method="POST" style="display: inline;">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 </div>

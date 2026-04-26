@@ -2,8 +2,6 @@
  * Inventory Analytics Dashboard
  */
 
-const Alpine = window.Alpine;
-
 // Theme Color Manager
 class ThemeColorManager {
     constructor() {
@@ -60,7 +58,7 @@ class ThemeColorManager {
     }
 }
 
-// Chart Manager - Handles all Chart.js instances
+// Chart Manager
 class ChartManager {
     constructor() {
         this.charts = new Map();
@@ -75,7 +73,7 @@ class ChartManager {
             animation: { duration: 500, easing: 'easeInOutQuart' },
             plugins: {
                 legend: {
-                    labels: { 
+                    labels: {
                         color: this.themeManager.getTextColor(),
                         font: { size: 11, family: 'system-ui' },
                         padding: 12,
@@ -97,15 +95,15 @@ class ChartManager {
 
     create(id, config) {
         this.destroy(id);
-        
+
         const canvas = document.getElementById(id);
         if (!canvas) return null;
-        
+
         const chart = new Chart(canvas, {
             ...config,
             options: { ...this.defaultOptions, ...config.options }
         });
-        
+
         this.charts.set(id, chart);
         return chart;
     }
@@ -125,11 +123,11 @@ class ChartManager {
 
     getAxisConfig() {
         return {
-            grid: { 
+            grid: {
                 color: this.themeManager.getGridColor(),
-                drawBorder: false 
+                drawBorder: false
             },
-            ticks: { 
+            ticks: {
                 color: this.themeManager.getTextColor(),
                 font: { size: 11 }
             }
@@ -145,13 +143,12 @@ class AnalyticsAPI {
     }
 
     async fetchData(period) {
-        // Cancel previous request
         if (this.abortController) {
             this.abortController.abort();
         }
-        
+
         this.abortController = new AbortController();
-        
+
         try {
             const response = await fetch(`${this.baseURL}/${period}`, {
                 headers: {
@@ -160,11 +157,11 @@ class AnalyticsAPI {
                 },
                 signal: this.abortController.signal
             });
-            
+
             if (!response.ok) {
                 throw new Error(`API error: ${response.status}`);
             }
-            
+
             return await response.json();
         } catch (error) {
             if (error.name === 'AbortError') {
@@ -176,14 +173,18 @@ class AnalyticsAPI {
     }
 }
 
-// Alpine.js Application
-document.addEventListener('alpine:init', () => {
-    if (!Alpine) {
+export function registerAnalyticsApp() {
+    if (!window.Alpine) {
+        console.error('Alpine.js not found');
         return;
     }
-    Alpine.data('analyticsApp', () => ({
-        // State
-        activePeriod: window.ANALYTICS_CONFIG?.initialPeriod || 'month',
+
+    if (!window.ANALYTICS_CONFIG) {
+        window.ANALYTICS_CONFIG = { initialPeriod: 'month' };
+    }
+
+    window.Alpine.data('analyticsApp', () => ({
+        activePeriod: (window.ANALYTICS_CONFIG && window.ANALYTICS_CONFIG.initialPeriod) ? window.ANALYTICS_CONFIG.initialPeriod : 'month',
         activeTab: 'overview',
         isLoading: false,
         lastUpdated: null,
@@ -194,50 +195,47 @@ document.addEventListener('alpine:init', () => {
             warehouse: false,
             reports: false
         },
-        
-        // Managers
+
         chartManager: new ChartManager(),
         api: new AnalyticsAPI('/api/analytics'),
-        
-        // Configuration
+
         periods: [
             { value: 'day', label: 'Today' },
             { value: 'week', label: 'This Week' },
             { value: 'month', label: 'This Month' },
             { value: 'year', label: 'This Year' }
         ],
-        
+
         tabs: [
             { id: 'overview', label: 'Overview' },
             { id: 'trends', label: 'Trends' },
             { id: 'warehouse', label: 'Warehouse' },
             { id: 'reports', label: 'Reports' }
         ],
-        
-        // Computed properties
+
         get lastUpdatedText() {
             if (!this.lastUpdated) return 'Never updated';
-            const time = this.lastUpdated.toLocaleTimeString([], { 
-                hour: '2-digit', 
-                minute: '2-digit' 
+            const time = this.lastUpdated.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
             });
             return `Updated ${time}`;
         },
-        
+
         get indicatorStyle() {
             const activeButton = document.querySelector(`.tab-button[data-tab="${this.activeTab}"]`);
             if (!activeButton) return {};
-            
+
             const container = activeButton.closest('.tab-nav-container');
             const containerRect = container.getBoundingClientRect();
             const buttonRect = activeButton.getBoundingClientRect();
-            
+
             return {
                 left: `${buttonRect.left - containerRect.left}px`,
                 width: `${buttonRect.width}px`
             };
         },
-        
+
         get kpiCards() {
             const kpis = this.data?.kpis || {};
             return [
@@ -301,61 +299,55 @@ document.addEventListener('alpine:init', () => {
                 }
             ];
         },
-        
+
         get warehouseData() {
             return this.data?.warehouse?.rows || [];
         },
-        
+
         get topProducts() {
             return this.data?.top_products || [];
         },
-        
+
         get lowStockItems() {
             return this.data?.low_stock || [];
         },
-        
+
         get categorySummary() {
             return this.data?.category_summary || [];
         },
-        
-        // Lifecycle
+
         init() {
             this.loadData();
             this.setupEventListeners();
         },
-        
+
         setupEventListeners() {
             window.addEventListener('resize', () => {
                 this.updateIndicator();
             });
         },
-        
+
         updateIndicator() {
-            // Force reactive update
             this.activeTab = this.activeTab;
         },
-        
-        // Actions
+
         async loadData() {
             this.isLoading = true;
-            
+
             try {
                 this.data = await this.api.fetchData(this.activePeriod);
                 this.lastUpdated = new Date();
-                
-                // Render current tab
                 await this.renderCurrentTab();
             } catch (error) {
                 console.error('Failed to load analytics:', error);
-                // Show error toast (implement as needed)
             } finally {
                 this.isLoading = false;
             }
         },
-        
+
         async setPeriod(period) {
             if (this.activePeriod === period) return;
-            
+
             this.activePeriod = period;
             this.chartsRendered = {
                 overview: false,
@@ -363,27 +355,27 @@ document.addEventListener('alpine:init', () => {
                 warehouse: false,
                 reports: false
             };
-            
+
             await this.loadData();
         },
-        
+
         async switchTab(tabId) {
             if (this.activeTab === tabId) return;
-            
+
             this.activeTab = tabId;
             this.updateIndicator();
-            
+
             await this.renderCurrentTab();
         },
-        
+
         async renderCurrentTab() {
             if (!this.data) return;
-            
+
             const tabRendered = this.chartsRendered[this.activeTab];
             if (tabRendered) return;
-            
+
             await this.$nextTick();
-            
+
             switch (this.activeTab) {
                 case 'overview':
                     this.renderOverviewCharts();
@@ -395,18 +387,16 @@ document.addEventListener('alpine:init', () => {
                     this.renderWarehouseCharts();
                     break;
                 case 'reports':
-                    // Tables only, no charts to render
                     break;
             }
-            
+
             this.chartsRendered[this.activeTab] = true;
         },
-        
+
         renderOverviewCharts() {
             const { stock_value_trend, category_distribution, sales_trend } = this.data;
             const colors = this.chartManager.themeManager;
-            
-            // Stock Value Chart
+
             this.chartManager.create('stockValueChart', {
                 type: 'line',
                 data: {
@@ -416,7 +406,7 @@ document.addEventListener('alpine:init', () => {
                         data: stock_value_trend?.values || [],
                         borderColor: colors.getPrimaryColor(),
                         backgroundColor: this.createGradient('stockValueChart', [
-                            'rgba(15, 185, 177, 0.15)', 
+                            'rgba(15, 185, 177, 0.15)',
                             'rgba(15, 185, 177, 0)'
                         ]),
                         borderWidth: 2.5,
@@ -437,13 +427,10 @@ document.addEventListener('alpine:init', () => {
                             }
                         }
                     },
-                    plugins: {
-                        legend: { display: false }
-                    }
+                    plugins: { legend: { display: false } }
                 }
             });
-            
-            // Category Distribution Chart
+
             this.chartManager.create('categoryDistributionChart', {
                 type: 'doughnut',
                 data: {
@@ -460,16 +447,12 @@ document.addEventListener('alpine:init', () => {
                     plugins: {
                         legend: {
                             position: 'right',
-                            labels: {
-                                boxWidth: 12,
-                                padding: 15
-                            }
+                            labels: { boxWidth: 12, padding: 15 }
                         }
                     }
                 }
             });
-            
-            // Sales Trend Chart
+
             this.chartManager.create('salesTrendChart', {
                 type: 'bar',
                 data: {
@@ -478,7 +461,7 @@ document.addEventListener('alpine:init', () => {
                         label: 'Sales',
                         data: sales_trend?.values || [],
                         backgroundColor: this.createGradient('salesTrendChart', [
-                            'rgba(15, 185, 177, 0.2)', 
+                            'rgba(15, 185, 177, 0.2)',
                             'rgba(15, 185, 177, 0)'
                         ]),
                         borderColor: colors.getPrimaryColor(),
@@ -498,18 +481,15 @@ document.addEventListener('alpine:init', () => {
                             }
                         }
                     },
-                    plugins: {
-                        legend: { display: false }
-                    }
+                    plugins: { legend: { display: false } }
                 }
             });
         },
-        
+
         renderTrendsCharts() {
             const { monthly_performance, category_momentum } = this.data;
             const colors = this.chartManager.themeManager;
-            
-            // Monthly Performance Chart
+
             this.chartManager.create('monthlyPerformanceChart', {
                 type: 'bar',
                 data: {
@@ -533,13 +513,10 @@ document.addEventListener('alpine:init', () => {
                             }
                         }
                     },
-                    plugins: {
-                        legend: { display: false }
-                    }
+                    plugins: { legend: { display: false } }
                 }
             });
-            
-            // Category Momentum Chart
+
             this.chartManager.create('categoryMomentumChart', {
                 type: 'bar',
                 data: {
@@ -567,18 +544,16 @@ document.addEventListener('alpine:init', () => {
                         },
                         y: this.chartManager.getAxisConfig()
                     },
-                    plugins: {
-                        legend: { display: false }
-                    }
+                    plugins: { legend: { display: false } }
                 }
             });
         },
-        
+
         renderWarehouseCharts() {
             const { warehouse } = this.data;
             const chartData = warehouse?.chart || {};
             const colors = this.chartManager.themeManager;
-            
+
             this.chartManager.create('warehouseComparisonChart', {
                 type: 'bar',
                 data: {
@@ -613,65 +588,62 @@ document.addEventListener('alpine:init', () => {
                 }
             });
         },
-        
+
         refresh() {
             this.loadData();
         },
-        
-        // Utility functions
+
         createGradient(canvasId, colors) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return colors[0];
-            
+
             const ctx = canvas.getContext('2d');
             const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height || 200);
             gradient.addColorStop(0, colors[0]);
             gradient.addColorStop(1, colors[1]);
             return gradient;
         },
-        
+
         formatCurrency(value) {
             const num = parseFloat(value) || 0;
             if (num >= 1000000) return '$' + (num / 1000000).toFixed(1) + 'M';
             if (num >= 1000) return '$' + (num / 1000).toFixed(1) + 'K';
             return '$' + num.toFixed(2);
         },
-        
+
         formatNumber(value) {
             const num = parseInt(value) || 0;
             if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
             if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
             return num.toLocaleString();
         },
-        
+
         formatKPIValue(key, value) {
-            const currencyKeys = ['average_stock_value', 'total_sales_today', 
-                                 'total_sales_month', 'total_sales_year'];
+            const currencyKeys = ['average_stock_value', 'total_sales_today',
+                'total_sales_month', 'total_sales_year'];
             return currencyKeys.includes(key) ? this.formatCurrency(value) : this.formatNumber(value);
         },
-        
+
         calculateTrend(metric) {
-            // Implement trend calculation based on historical data
             return null;
         },
-        
+
         getTrendDirection(metric) {
-            // Implement trend direction logic
             return 'up';
         },
-        
+
         getUtilizationStatus(utilization) {
             if (utilization < 60) return 'optimal';
             if (utilization < 85) return 'moderate';
             return 'high';
         },
-        
+
         getUtilizationLabel(utilization) {
             if (utilization < 60) return 'Optimal';
             if (utilization < 85) return 'Moderate';
             return 'High';
         },
-        
+
         getStockStatusLabel(status) {
             const labels = {
                 ok: 'In Stock',
@@ -681,5 +653,4 @@ document.addEventListener('alpine:init', () => {
             return labels[status] || status;
         }
     }));
-});
-
+}
