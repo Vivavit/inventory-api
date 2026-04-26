@@ -18,7 +18,7 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::with(['category', 'brand', 'inventoryLocations', 'warehouseProducts'])
+        $products = Product::with(['category', 'brand', 'inventoryLocations', 'warehouseProducts', 'images'])
             ->latest()
             ->paginate(20);
 
@@ -39,101 +39,112 @@ class ProductController extends Controller
         return view('products.create', compact('categories', 'brands', 'warehouses', 'recentProducts'));
     }
 
-// In ProductController.php - store method
-public function store(Request $request)
-{
-    // Update validation to handle images properly
-    $validated = $request->validate([
-        'name' => 'required|string|max:255',
-        'sku' => 'required|string|unique:products',
-        'category_id' => 'required|exists:categories,id',
-        'brand_id' => 'nullable|exists:brands,id',
-        'price' => 'required|numeric|min:0',
-        'cost_price' => 'nullable|numeric|min:0',
-        'compare_price' => 'nullable|numeric|min:0',
-        'description' => 'nullable|string',
-        'short_description' => 'nullable|string|max:500',
-        'weight' => 'nullable|numeric|min:0',
-        'default_low_stock_threshold' => 'nullable|integer|min:1',
-        'manage_stock' => 'boolean',
-        'is_active' => 'boolean',
-        'is_featured' => 'boolean',
-        'images' => 'nullable|array',
-        'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
-    ]);
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'sku' => 'required|string|unique:products',
+            'category_id' => 'required|exists:categories,id',
+            'brand_id' => 'nullable|exists:brands,id',
+            'price' => 'required|numeric|min:0',
+            'cost_price' => 'nullable|numeric|min:0',
+            'compare_price' => 'nullable|numeric|min:0',
+            'description' => 'nullable|string',
+            'short_description' => 'nullable|string|max:500',
+            'weight' => 'nullable|numeric|min:0',
+            'default_low_stock_threshold' => 'nullable|integer|min:1',
+            'manage_stock' => 'boolean',
+            'is_active' => 'boolean',
+            'is_featured' => 'boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
 
-    // Generate slug
-    $validated['slug'] = Str::slug($validated['name']).'-'.Str::random(6);
-    
-    // Set default values
-    $validated['manage_stock'] = $request->has('manage_stock') ? 1 : 0;
-    $validated['is_active'] = $request->has('is_active') ? 1 : 0;
-    $validated['is_featured'] = $request->has('is_featured') ? 1 : 0;
-    $validated['has_variants'] = false;
+        // Set default values
+        $validated['manage_stock'] = $request->has('manage_stock') ? 1 : 0;
+        $validated['is_active'] = $request->has('is_active') ? 1 : 0;
+        $validated['is_featured'] = $request->has('is_featured') ? 1 : 0;
+        $validated['has_variants'] = false;
 
-    // Create product
-    $product = Product::create($validated);
-
-    // Handle image upload - FIXED
-    if ($request->hasFile('images')) {
-        $files = $request->file('images');
-        
-        // Handle both single file and array
-        if (!is_array($files)) {
-            $files = [$files];
-        }
-        
-        foreach ($files as $index => $image) {
+        // Handle primary image upload (for image_path column)
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
             if ($image && $image->isValid()) {
                 try {
                     $imageName = time().'_'.Str::random(10).'.'.$image->getClientOriginalExtension();
                     $path = $image->storeAs('products', $imageName, 'public');
-                    
-                    ProductImage::create([
-                        'product_id' => $product->id,
-                        'image_path' => $path,
-                        'is_primary' => $index === 0,
-                        'sort_order' => $index,
-                    ]);
+                    $validated['image_path'] = $path;
+                    Log::info('Primary image stored: '.$path);
                 } catch (\Exception $e) {
-                    // Log error but continue
-                    Log::error('Image upload failed: '.$e->getMessage());
+                    Log::error('Primary image upload failed: '.$e->getMessage());
+                    return back()->with('error', 'Failed to upload primary image');
                 }
             }
         }
-    }
 
-    // Add initial stock to warehouses if provided
-    if ($request->has('warehouse_stock')) {
-        foreach ($request->warehouse_stock as $warehouseId => $quantity) {
-            if ($quantity > 0) {
-                $locationCode = $request->location_code[$warehouseId] ?? null;
+        // Create product
+        $product = Product::create($validated);
 
-                InventoryLocation::create([
-                    'product_id' => $product->id,
-                    'warehouse_id' => $warehouseId,
-                    'quantity' => $quantity,
-                    'reserved_quantity' => 0,
-                    'location_code' => $locationCode,
-                ]);
-
-                // Sync warehouse_products table
-                $totalQty = InventoryLocation::where('product_id', $product->id)
-                    ->where('warehouse_id', $warehouseId)
-                    ->sum('quantity');
-
-                WarehouseProduct::updateOrCreate([
-                    'warehouse_id' => $warehouseId,
-                    'product_id' => $product->id,
-                ], [
-                    'quantity' => $totalQty,
-                ]);
+        // Handle gallery images (ProductImage table)
+        if ($request->hasFile('images')) {
+            $files = $request->file('images');
+            
+            if (!is_array($files)) {
+                $files = [$files];
+            }
+            
+            foreach ($files as $index => $image) {
+                if ($image && $image->isValid()) {
+                    try {
+                        $imageName = time().'_'.Str::random(10).'.'.$image->getClientOriginalExtension();
+                        $path = $image->storeAs('products', $imageName, 'public');
+                        
+                        ProductImage::create([
+                            'product_id' => $product->id,
+                            'image_path' => $path,
+                            'is_primary' => $index === 0,
+                            'sort_order' => $index,
+                        ]);
+                        
+                        Log::info('Gallery image stored: '.$path);
+                    } catch (\Exception $e) {
+                        Log::error('Gallery image upload failed: '.$e->getMessage());
+                    }
+                }
             }
         }
-    }
 
-    return redirect()->route('products.index')->with('success', 'Product created successfully!');
-}
+        // Add initial stock to warehouses if provided
+        if ($request->has('warehouse_stock')) {
+            foreach ($request->warehouse_stock as $warehouseId => $quantity) {
+                if ($quantity > 0) {
+                    $locationCode = $request->location_code[$warehouseId] ?? null;
+
+                    InventoryLocation::create([
+                        'product_id' => $product->id,
+                        'warehouse_id' => $warehouseId,
+                        'quantity' => $quantity,
+                        'reserved_quantity' => 0,
+                        'location_code' => $locationCode,
+                    ]);
+
+                    $totalQty = InventoryLocation::where('product_id', $product->id)
+                        ->where('warehouse_id', $warehouseId)
+                        ->sum('quantity');
+
+                    WarehouseProduct::updateOrCreate([
+                        'warehouse_id' => $warehouseId,
+                        'product_id' => $product->id,
+                    ], [
+                        'quantity' => $totalQty,
+                    ]);
+                }
+            }
+        }
+
+        return redirect()->route('products.index')->with('success', 'Product created successfully!');
+    }
 
     public function show(Product $product)
     {
@@ -143,49 +154,51 @@ public function store(Request $request)
         return view('products.show', compact('product', 'warehouses'));
     }
 
-// In ProductController.php
-public function edit(Product $product)
-{
-    $categories = Category::all();
-    $brands = Brand::all();
-    $warehouses = Warehouse::all();
-    
-    // Eager load all necessary relationships
-    $product->load([
-        'category', 
-        'brand', 
-        'images', 
-        'inventoryLocations',
-        'warehouseProducts'
-    ]);
-    
-    // Prepare warehouse stock data
-    $warehouseStock = [];
-    foreach ($warehouses as $warehouse) {
-        $inventoryLocation = $product->inventoryLocations
-            ->where('warehouse_id', $warehouse->id)
-            ->first();
-            
-        $warehouseStock[$warehouse->id] = [
-            'quantity' => $inventoryLocation ? $inventoryLocation->quantity : 0,
-            'location_code' => $inventoryLocation ? $inventoryLocation->location_code : '',
-        ];
-    }
+    public function edit(Product $product)
+    {
+        $categories = Category::all();
+        $brands = Brand::all();
+        $warehouses = Warehouse::all();
+        
+        $product->load([
+            'category', 
+            'brand', 
+            'images', 
+            'inventoryLocations',
+            'warehouseProducts'
+        ]);
+        
+        $warehouseStock = [];
+        foreach ($warehouses as $warehouse) {
+            $inventoryLocation = $product->inventoryLocations
+                ->where('warehouse_id', $warehouse->id)
+                ->first();
+                
+            $warehouseStock[$warehouse->id] = [
+                'quantity' => $inventoryLocation ? $inventoryLocation->quantity : 0,
+                'location_code' => $inventoryLocation ? $inventoryLocation->location_code : '',
+            ];
+        }
 
-    // Always return JSON for popup operations
-    return response()->json([
-        'product' => $product,
-        'warehouse_stock' => $warehouseStock,
-        'categories' => $categories,
-        'brands' => $brands,
-        'warehouses' => $warehouses,
-        'primary_image_url' => $product->primaryImage ? $product->primaryImage->url : null,
-    ]);
-}
+        return response()->json([
+            'product' => $product,
+            'warehouse_stock' => $warehouseStock,
+            'categories' => $categories,
+            'brands' => $brands,
+            'warehouses' => $warehouses,
+            'primary_image_url' => $product->image_url,
+            'gallery_images' => $product->images->map(function($img) {
+                return [
+                    'id' => $img->id,
+                    'url' => $img->url,
+                    'is_primary' => $img->is_primary
+                ];
+            }),
+        ]);
+    }
 
     public function update(Request $request, Product $product)
     {
-        // Validation
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'sku' => 'required|string|unique:products,sku,'.$product->id,
@@ -202,61 +215,83 @@ public function edit(Product $product)
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images' => 'nullable|array',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
-
-        // Handle image upload efficiently
-        $hasNewImage = false;
-        $newImage = null;
-
-        if ($request->hasFile('image')) {
-            $newImage = $request->file('image');
-            if ($newImage && $newImage->isValid()) {
-                $hasNewImage = true;
-            }
-        }
-
-        // Update slug if name changed
-        if ($product->name !== $validated['name']) {
-            $validated['slug'] = Str::slug($validated['name']).'-'.Str::random(6);
-        }
 
         // Set boolean values
         $validated['manage_stock'] = $request->has('manage_stock') ? 1 : 0;
         $validated['is_active'] = $request->has('is_active') ? 1 : 0;
         $validated['is_featured'] = $request->has('is_featured') ? 1 : 0;
 
-        // Update product
-        $product->update($validated);
-        // Handle new image if uploaded
-        if ($hasNewImage && $newImage) {
-            try {
-                // Delete existing images efficiently
-                $product->images()->each(function ($existingImage) {
-                    Storage::disk('public')->delete($existingImage->image_path);
-                    $existingImage->delete();
-                });
+        // Handle primary image update (image_path column)
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            if ($image && $image->isValid()) {
+                try {
+                    // Delete old primary image if exists
+                    if ($product->image_path) {
+                        Storage::disk('public')->delete($product->image_path);
+                    }
 
-                // Store new image
-                $imageName = time().'_'.Str::random(10).'.'.$newImage->getClientOriginalExtension();
-                $path = $newImage->storeAs('products', $imageName, 'public');
-
-                // Create new image record
-                ProductImage::create([
-                    'product_id' => $product->id,
-                    'image_path' => $path,
-                    'is_primary' => true,
-                    'sort_order' => 0,
-                ]);
-
-            } catch (\Exception $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to update image: ' . $e->getMessage()
-                ], 500);
+                    $imageName = time().'_'.Str::random(10).'.'.$image->getClientOriginalExtension();
+                    $path = $image->storeAs('products', $imageName, 'public');
+                    $validated['image_path'] = $path;
+                    Log::info('Primary image updated: '.$path);
+                } catch (\Exception $e) {
+                    Log::error('Primary image update failed: '.$e->getMessage());
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to update primary image: '.$e->getMessage()
+                    ], 500);
+                }
             }
         }
 
-        // Update stock locations efficiently
+        // Update product
+        $product->update($validated);
+
+        // Handle gallery images update (ProductImage table)
+        if ($request->hasFile('images')) {
+            $files = $request->file('images');
+            
+            if (!is_array($files)) {
+                $files = [$files];
+            }
+            
+            // Delete old gallery images
+            foreach ($product->images as $oldImage) {
+                Storage::disk('public')->delete($oldImage->image_path);
+                $oldImage->delete();
+            }
+            
+            // Upload new gallery images
+            foreach ($files as $index => $image) {
+                if ($image && $image->isValid()) {
+                    try {
+                        $imageName = time().'_'.Str::random(10).'.'.$image->getClientOriginalExtension();
+                        $path = $image->storeAs('products', $imageName, 'public');
+
+                        ProductImage::create([
+                            'product_id' => $product->id,
+                            'image_path' => $path,
+                            'is_primary' => $index === 0,
+                            'sort_order' => $index,
+                        ]);
+                        
+                        Log::info('Gallery image updated: '.$path);
+                    } catch (\Exception $e) {
+                        Log::error('Gallery image upload failed: '.$e->getMessage());
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Failed to update gallery images: '.$e->getMessage()
+                        ], 500);
+                    }
+                }
+            }
+        }
+
+        // Update stock locations
         if ($request->has('warehouse_stock')) {
             foreach ($request->warehouse_stock as $warehouseId => $quantity) {
                 $locationCode = $request->location_code[$warehouseId] ?? null;
@@ -272,7 +307,6 @@ public function edit(Product $product)
                             'location_code' => $locationCode,
                         ]);
                         
-                        // Sync warehouse product quantity
                         $totalQty = InventoryLocation::where('product_id', $product->id)
                             ->where('warehouse_id', $warehouseId)
                             ->sum('quantity');
@@ -286,7 +320,6 @@ public function edit(Product $product)
                     } else {
                         $inventoryLocation->delete();
                         
-                        // Set warehouse product quantity to 0
                         WarehouseProduct::updateOrCreate([
                             'warehouse_id' => $warehouseId,
                             'product_id' => $product->id,
@@ -303,7 +336,6 @@ public function edit(Product $product)
                         'location_code' => $locationCode,
                     ]);
                     
-                    // Sync warehouse product quantity
                     WarehouseProduct::updateOrCreate([
                         'warehouse_id' => $warehouseId,
                         'product_id' => $product->id,
@@ -314,7 +346,6 @@ public function edit(Product $product)
             }
         }
 
-        // Return JSON response for popup operations
         return response()->json([
             'success' => true,
             'message' => 'Product updated successfully!',
@@ -332,7 +363,12 @@ public function edit(Product $product)
     public function destroy(Product $product)
     {
         try {
-            // Delete associated images
+            // Delete primary image
+            if ($product->image_path) {
+                Storage::disk('public')->delete($product->image_path);
+            }
+
+            // Delete gallery images
             foreach ($product->images as $image) {
                 Storage::disk('public')->delete($image->image_path);
                 $image->delete();
@@ -341,38 +377,44 @@ public function edit(Product $product)
             // Delete inventory locations
             $product->inventoryLocations()->delete();
 
-            // Delete product
+            // Delete product (soft delete)
             $product->delete();
 
-            // Return JSON response for popup operations
             return response()->json([
                 'success' => true,
                 'message' => 'Product deleted successfully!'
             ]);
         } catch (\Exception $e) {
+            Log::error('Product delete failed: '.$e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to delete product: ' . $e->getMessage()
+                'message' => 'Failed to delete product: '.$e->getMessage()
             ], 500);
         }
     }
 
     public function deleteImage(ProductImage $image)
     {
-        Storage::disk('public')->delete($image->image_path);
-        $image->delete();
-
-        return back()->with('success', 'Image deleted successfully!');
+        try {
+            Storage::disk('public')->delete($image->image_path);
+            $image->delete();
+            return back()->with('success', 'Image deleted successfully!');
+        } catch (\Exception $e) {
+            Log::error('Image delete failed: '.$e->getMessage());
+            return back()->with('error', 'Failed to delete image');
+        }
     }
 
     public function setPrimaryImage(Product $product, ProductImage $image)
     {
-        // Reset all images to non-primary
-        ProductImage::where('product_id', $product->id)->update(['is_primary' => false]);
+        try {
+            ProductImage::where('product_id', $product->id)->update(['is_primary' => false]);
+            $image->update(['is_primary' => true]);
 
-        // Set selected image as primary
-        $image->update(['is_primary' => true]);
-
-        return back()->with('success', 'Primary image updated!');
+            return back()->with('success', 'Primary image updated!');
+        } catch (\Exception $e) {
+            Log::error('Set primary image failed: '.$e->getMessage());
+            return back()->with('error', 'Failed to update primary image');
+        }
     }
 }
