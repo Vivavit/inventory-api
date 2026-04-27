@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class ProductImage extends Model
 {
@@ -47,18 +49,46 @@ class ProductImage extends Model
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 
-    // Helper Methods
+    // ========== OPTIMIZED URL ACCESSOR ==========
     public function getUrlAttribute()
     {
-        // Prefer public storage URL if file exists, otherwise use a bundled placeholder
-        try {
-            if (\Illuminate\Support\Facades\Storage::disk('public')->exists($this->image_path)) {
-                return \Illuminate\Support\Facades\Storage::url($this->image_path);
-            }
-        } catch (\Throwable $e) {
-            // ignore and fall back to placeholder
+        // 1. Check if image_path is empty or null
+        if (empty($this->image_path)) {
+            return $this->getPlaceholderUrl();
         }
 
-        return asset('images/product-default.svg');
+        // 2. Clean the path (remove leading slashes if present)
+        $cleanPath = ltrim($this->image_path, '/');
+
+        // Always use asset() for consistent URLs
+        return asset('storage/' . $cleanPath);
+    }
+
+    /**
+     * Get placeholder image URL
+     */
+    private function getPlaceholderUrl()
+    {
+        // Try multiple placeholder options
+        $placeholders = [
+            'images/product-default.svg',
+            'images/product-placeholder.jpg',
+            'images/no-image.png',
+            'https://via.placeholder.com/300x300/e0e0e0/666666?text=No+Image'
+        ];
+
+        foreach ($placeholders as $placeholder) {
+            if (str_starts_with($placeholder, 'http')) {
+                return $placeholder;
+            }
+            
+            $fullPath = public_path($placeholder);
+            if (file_exists($fullPath)) {
+                return asset($placeholder);
+            }
+        }
+
+        // Final fallback
+        return 'https://via.placeholder.com/300x300/e0e0e0/666666?text=No+Image';
     }
 }

@@ -17,7 +17,7 @@
     <!-- SIDEBAR -->
     <div class="sidebar" id="sidebar" aria-label="Primary navigation">
         <div class="logo" id="logo-toggle" title="Toggle sidebar">
-            <img src="{{ asset('storage/products/logo_white.png') }}" alt="Cam Inventory logo">
+            <img src="{{ asset('images/logo_white.png') }}" alt="Cam Inventory logo">
             <span class="logo-text">Cam Inventory</span>
         </div>
         <nav>

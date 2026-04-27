@@ -43,7 +43,7 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'sku' => 'required|string|unique:products',
+            'sku' => 'required|string|unique:products,sku,' . ($request->id ?? 'null'),
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'nullable|exists:brands,id',
             'price' => 'required|numeric|min:0',
@@ -376,9 +376,12 @@ class ProductController extends Controller
 
             // Delete inventory locations
             $product->inventoryLocations()->delete();
+            
+            // Delete warehouse products
+            $product->warehouseProducts()->delete();
 
-            // Delete product (soft delete)
-            $product->delete();
+            // Delete product permanently
+            $product->forceDelete();
 
             return response()->json([
                 'success' => true,

@@ -46,7 +46,13 @@
                         @endphp
                         <tr>
                             <td>
-                                @if($product->primaryImage)
+                                @if($product->image_path)
+                                    <img src="{{ $product->image_url }}"
+                                         alt="{{ $product->name }}"
+                                         class="product-thumbnail"
+                                         data-id="{{ $product->id }}"
+                                         onerror="this.src='https://placehold.co/68x46/e9fff9/03624C?text=?'">
+                                @elseif($product->primaryImage)
                                     <img src="{{ $product->primaryImage->url }}"
                                          alt="{{ $product->name }}"
                                          class="product-thumbnail"
@@ -249,7 +255,7 @@
                                     <p>Click to upload</p>
                                     <p style="font-size:11px;opacity:.6;">JPEG, PNG · max 2 MB</p>
                                 </div>
-                                <input type="file" id="mImages" name="images[]" accept="image/*" style="display:none;" onchange="window.handleImageSelect(event)">
+                                <input type="file" id="mImages" name="image" accept="image/*" style="display:none;" onchange="window.handleImageSelect(event)">
                                 <div id="mImgPreviewWrap" class="d-none" style="text-align:center;">
                                     <div class="img-preview-wrap">
                                         <img id="mImgPreview" src="" alt="Preview">

@@ -110,16 +110,14 @@ class Product extends Model
 
     public function getImageUrlAttribute()
     {
-        if ($this->image_path) {
-            return Storage::url($this->image_path);
+        if (empty($this->image_path)) {
+            return $this->getPlaceholderUrl();
         }
-        
-        // Fallback to primary image from relationship
-        if ($this->primaryImage) {
-            return Storage::url($this->primaryImage->image_path);
-        }
-        
-        return asset('images/product-default.svg');
+
+        $cleanPath = ltrim($this->image_path, '/');
+
+        // Always use asset() for consistent URLs
+        return asset('storage/' . $cleanPath);
     }
 
     protected static function boot()
@@ -164,6 +162,62 @@ class Product extends Model
     public function orderItems()
     {
         return $this->hasMany(\App\Models\OrderItem::class);
+    }
+
+    // ========== IMAGE URL ACCESSORS ==========
+
+    /**
+     * Get primary image from ProductImage relationship
+     */
+    public function getPrimaryImageAttribute()
+    {
+        return $this->images()->where('is_primary', true)->first() ?? $this->images()->first();
+    }
+
+    /**
+     * Get all image URLs as array
+     */
+    public function getAllImageUrlsAttribute()
+    {
+        $urls = [];
+        
+        // Add primary image from image_path if exists
+        if (!empty($this->image_path)) {
+            $urls[] = $this->image_url;
+        }
+        
+        // Add gallery images
+        foreach ($this->images as $image) {
+            $urls[] = $image->url;
+        }
+        
+        return array_unique($urls);
+    }
+
+    /**
+     * Get placeholder image URL
+     */
+    private function getPlaceholderUrl()
+    {
+        $placeholders = [
+            'images/product-default.svg',
+            'images/product-placeholder.jpg',
+            'images/no-image.png',
+            'https://via.placeholder.com/300x300/e0e0e0/666666?text=No+Image'
+        ];
+
+        foreach ($placeholders as $placeholder) {
+            if (str_starts_with($placeholder, 'http')) {
+                return $placeholder;
+            }
+            
+            $fullPath = public_path($placeholder);
+            if (file_exists($fullPath)) {
+                return asset($placeholder);
+            }
+        }
+
+        return 'https://via.placeholder.com/300x300/e0e0e0/666666?text=No+Image';
     }
     
 }
