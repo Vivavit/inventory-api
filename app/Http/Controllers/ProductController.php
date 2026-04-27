@@ -88,11 +88,16 @@ class ProductController extends Controller
         // Handle gallery images - Store in database
         if ($request->hasFile('images')) {
             $files = $request->file('images');
-            if (!is_array($files)) $files = [$files];
+            
+            if (!is_array($files)) {
+                $files = [$files];
+            }
+            
             foreach ($files as $index => $image) {
                 if ($image && $image->isValid()) {
                     try {
                         $imageData = file_get_contents($image->getRealPath());
+                        
                         ProductImage::create([
                             'product_id' => $product->id,
                             'image_data' => $imageData,
@@ -100,6 +105,7 @@ class ProductController extends Controller
                             'is_primary' => $index === 0,
                             'sort_order' => $index,
                         ]);
+                        
                         Log::info('Gallery image stored in database');
                     } catch (\Exception $e) {
                         Log::error('Gallery image upload failed: '.$e->getMessage());
@@ -380,7 +386,6 @@ class ProductController extends Controller
     public function deleteImage(ProductImage $image)
     {
         try {
-            // Remove this line: Storage::disk('public')->delete($image->image_path);
             $image->delete();
             return back()->with('success', 'Image deleted successfully!');
         } catch (\Exception $e) {
