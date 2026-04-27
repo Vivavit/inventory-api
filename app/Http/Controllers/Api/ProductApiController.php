@@ -11,11 +11,110 @@ use App\Models\WarehouseProduct;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ProductApiController extends Controller
 {
+    private function encodeImageForStorage(string $imageData): string
+    {
+        return base64_encode($imageData);
+    }
+
+    private function getPlaceholderImageUrl(): string
+    {
+        $svg = <<<SVG
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
+  <rect width="300" height="300" fill="#e0e0e0"/>
+  <path d="M90 200l45-50 35 30 30-40 50 60H90z" fill="#9a9a9a"/>
+  <circle cx="120" cy="110" r="18" fill="#9a9a9a"/>
+  <text x="150" y="255" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#666666">No Image</text>
+</svg>
+SVG;
+
+        return 'data:image/svg+xml;charset=UTF-8,'.rawurlencode($svg);
+    }
+
+    private function normalizeUploadedFiles(Request $request, string $key): array
+    {
+        if (! $request->hasFile($key)) {
+            return [];
+        }
+
+        $files = $request->file($key);
+
+        return is_array($files) ? $files : [$files];
+    }
+
+    private function syncPrimaryImageFromUpload(Product $product, $image): void
+    {
+        if (! $image || ! $image->isValid()) {
+            return;
+        }
+
+        $imageData = file_get_contents($image->getRealPath());
+
+        $product->update([
+            'image_data' => $this->encodeImageForStorage($imageData),
+            'image_mime_type' => $image->getMimeType(),
+        ]);
+    }
+
+    private function syncGalleryImages(Product $product, array $files, bool $replaceExisting = false): void
+    {
+        $validFiles = array_values(array_filter($files, fn ($file) => $file && $file->isValid()));
+
+        if (empty($validFiles)) {
+            return;
+        }
+
+        if ($replaceExisting) {
+            $product->images()->delete();
+        }
+
+        foreach ($validFiles as $index => $image) {
+            $imageData = file_get_contents($image->getRealPath());
+
+            ProductImage::create([
+                'product_id' => $product->id,
+                'image_data' => $this->encodeImageForStorage($imageData),
+                'mime_type' => $image->getMimeType(),
+                'is_primary' => $index === 0,
+                'sort_order' => $index,
+            ]);
+        }
+
+        if ($replaceExisting || empty($product->image_data)) {
+            $firstImage = $validFiles[0];
+            $this->syncPrimaryImageFromUpload($product, $firstImage);
+        }
+    }
+
+    private function transformProductForApi(Product $product, int $stock, ?int $warehouseId = null, ?string $warehouseName = null): array
+    {
+        $product->loadMissing(['category', 'brand', 'images', 'primaryImage', 'inventoryLocations', 'warehouseProducts.warehouse']);
+
+        $productData = $product->toArray();
+        $productData['stock'] = $stock;
+        $productData['image'] = $product->image_url ?: ($product->primaryImage?->url ?? $this->getPlaceholderImageUrl());
+        $productData['image_url'] = $productData['image'];
+        $productData['images'] = $product->images->map(function ($image) {
+            return [
+                'id' => $image->id,
+                'url' => $image->url,
+                'image_url' => $image->url,
+                'is_primary' => $image->is_primary,
+                'alt_text' => $image->alt_text,
+            ];
+        })->values()->toArray();
+
+        if ($warehouseId !== null) {
+            $productData['warehouse_id'] = $warehouseId;
+            $productData['warehouse_name'] = $warehouseName;
+        }
+
+        return $productData;
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -32,9 +131,9 @@ class ProductApiController extends Controller
         }
 
         // Build query
-        $productsQuery = Product::query()->with(['images' => function ($q) {
-            $q->where('is_primary', true);
-        }])->where('is_active', true);
+        $productsQuery = Product::query()
+            ->with(['category', 'primaryImage'])
+            ->where('is_active', true);
 
         // For non-admin users, filter by their warehouses only
         if (! $user->isAdmin() && ! empty($warehouseIds)) {
@@ -44,23 +143,7 @@ class ProductApiController extends Controller
         }
         // For admin users, show all products (no warehouse filter)
 
-        $products = $productsQuery->get()->map(function ($product) use ($warehouseIds, $user, $warehouses, $request) {
-            $primaryImage = $product->primaryImage;
-            $imagePath = $primaryImage ? $primaryImage->image_path : null;
-
-            // Normalize path: remove 'storage/' or 'public/' prefixes if present
-            if ($imagePath) {
-                $imagePath = preg_replace('/^(storage\/|public\/)/', '', $imagePath);
-            }
-
-            $imageExists = $imagePath
-                ? Storage::disk('public')->exists($imagePath)
-                : false;
-
-            $imageUrl = $imageExists
-                ? asset('storage/'.$imagePath)
-                : asset('images/product-default.svg');
-
+        $products = $productsQuery->get()->map(function ($product) use ($warehouseIds, $user, $warehouses) {
             // Calculate stock
             if ($user->isAdmin()) {
                 // Admin sees total stock across all warehouses
@@ -85,7 +168,8 @@ class ProductApiController extends Controller
                 'description' => $product->short_description ?? '',
                 'price' => (float) $product->price,
                 'stock' => $stock,
-                'image' => $imageUrl,
+                'image' => $product->image_url ?: ($product->primaryImage?->url ?? $this->getPlaceholderImageUrl()),
+                'image_url' => $product->image_url ?: ($product->primaryImage?->url ?? $this->getPlaceholderImageUrl()),
                 'sku' => $product->sku,
                 'category' => $product->category ? $product->category->name : null,
                 'is_active' => (bool) $product->is_active,
@@ -138,6 +222,7 @@ class ProductApiController extends Controller
             'manage_stock' => 'boolean',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             'warehouse_stock' => 'nullable|array',
@@ -163,22 +248,11 @@ class ProductApiController extends Controller
         try {
             $product = Product::create($validated);
 
-            // Handle image upload(s)
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $index => $image) {
-                    if ($image && $image->isValid()) {
-                        $imageName = time().'_'.Str::random(10).'.'.$image->getClientOriginalExtension();
-                        $path = $image->store('products', 'public');
-
-                        ProductImage::create([
-                            'product_id' => $product->id,
-                            'image_path' => $path,
-                            'is_primary' => $index === 0, // First image is primary
-                            'sort_order' => $index,
-                        ]);
-                    }
-                }
+            if ($request->hasFile('image')) {
+                $this->syncPrimaryImageFromUpload($product, $request->file('image'));
             }
+
+            $this->syncGalleryImages($product, $this->normalizeUploadedFiles($request, 'images'));
 
             // Add initial stock to warehouses if provided
             if ($request->has('warehouse_stock')) {
@@ -216,12 +290,12 @@ class ProductApiController extends Controller
 
             DB::commit();
 
-            $product->load(['category', 'brand', 'images', 'warehouseProducts.warehouse', 'inventoryLocations']);
+            $product->refresh();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Product created successfully',
-                'data' => $product,
+                'data' => $this->transformProductForApi($product, (int) $product->warehouseProducts()->sum('quantity')),
             ], 201);
 
         } catch (\Exception $e) {
@@ -268,6 +342,7 @@ class ProductApiController extends Controller
             'brand',
             'variants',
             'images',
+            'primaryImage',
             'warehouseProducts.warehouse',
             'inventoryLocations',
         ]);
@@ -279,41 +354,20 @@ class ProductApiController extends Controller
             $warehouseIds = $user->warehouses()->pluck('id')->toArray();
             if (! empty($warehouseIds)) {
                 $stockQuery->whereIn('warehouse_id', $warehouseIds);
+                $firstWarehouse = $user->warehouses()->first();
             }
         }
 
         $stock = (int) $stockQuery->sum('quantity');
 
-        $productData = $product->toArray();
-        $productData['stock'] = $stock;
-
-        // Transform images for mobile app
-        $productData['images'] = $product->images->map(function($image) {
-            return [
-                'id' => $image->id,
-                'url' => $image->url,
-                'is_primary' => $image->is_primary,
-                'alt_text' => $image->alt_text,
-            ];
-        })->toArray();
-
-        // Add primary image URL for convenience
-        $primaryImage = $product->primaryImage;
-        $productData['image'] = $primaryImage ? $primaryImage->url : asset('images/product-default.svg');
-
-        // Add warehouse info for non-admin users
-        if (! $user->isAdmin()) {
-            $warehouseIds = $user->warehouses()->pluck('id')->toArray();
-            if (! empty($warehouseIds)) {
-                $firstWarehouse = $user->warehouses()->first();
-                $productData['warehouse_id'] = $warehouseIds[0];
-                $productData['warehouse_name'] = $firstWarehouse ? $firstWarehouse->name : null;
-            }
-        }
-
         return response()->json([
             'success' => true,
-            'data' => $productData,
+            'data' => $this->transformProductForApi(
+                $product,
+                $stock,
+                ! $user->isAdmin() && ! empty($warehouseIds ?? []) ? $warehouseIds[0] : null,
+                ! $user->isAdmin() && isset($firstWarehouse) ? $firstWarehouse->name : null
+            ),
         ]);
     }
 
@@ -352,6 +406,7 @@ class ProductApiController extends Controller
             'manage_stock' => 'boolean',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             'warehouse_stock' => 'nullable|array',
@@ -379,34 +434,12 @@ class ProductApiController extends Controller
         try {
             $product->update($validated);
 
-            // Handle new image upload (replace existing images)
-            if ($request->hasFile('images')) {
-                // Delete existing images
-                foreach ($product->images as $existingImage) {
-                    if (Storage::disk('public')->exists($existingImage->image_path)) {
-                        Storage::disk('public')->delete($existingImage->image_path);
-                    }
-                    $existingImage->delete();
-                }
-
-                // Store new images
-                $files = $request->file('images');
-                if (is_array($files)) {
-                    foreach ($files as $index => $newImage) {
-                        if ($newImage && $newImage->isValid()) {
-                            $imageName = time().'_'.Str::random(10).'.'.$newImage->getClientOriginalExtension();
-                            $path = $newImage->storeAs('products', $imageName, 'public');
-
-                            ProductImage::create([
-                                'product_id' => $product->id,
-                                'image_path' => $path,
-                                'is_primary' => $index === 0,
-                                'sort_order' => $index,
-                            ]);
-                        }
-                    }
-                }
+            if ($request->hasFile('image')) {
+                $this->syncPrimaryImageFromUpload($product, $request->file('image'));
             }
+
+            $galleryFiles = $this->normalizeUploadedFiles($request, 'images');
+            $this->syncGalleryImages($product, $galleryFiles, ! empty($galleryFiles));
 
             // Update warehouse stock if provided
             if ($request->has('warehouse_stock')) {
@@ -474,12 +507,12 @@ class ProductApiController extends Controller
 
             DB::commit();
 
-            $product->load(['category', 'brand', 'images', 'warehouseProducts.warehouse', 'inventoryLocations']);
+            $product->refresh();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Product updated successfully',
-                'data' => $product,
+                'data' => $this->transformProductForApi($product, (int) $product->warehouseProducts()->sum('quantity')),
             ]);
 
         } catch (\Exception $e) {
@@ -516,13 +549,7 @@ class ProductApiController extends Controller
         DB::beginTransaction();
 
         try {
-            // Delete associated images from storage
-            foreach ($product->images as $image) {
-                if (Storage::disk('public')->exists($image->image_path)) {
-                    Storage::disk('public')->delete($image->image_path);
-                }
-                $image->delete();
-            }
+            $product->images()->delete();
 
             // Delete inventory locations
             $product->inventoryLocations()->delete();
