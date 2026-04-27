@@ -64,14 +64,23 @@ document.addEventListener('DOMContentLoaded', () => {
         setVal('mSku', p.sku);
         setVal('mPrice', p.price);
         setVal('mDesc', p.description);
+        setVal('mShortDesc', p.short_description);
+        setVal('mComparePrice', p.compare_price);
+        setVal('mCostPrice', p.cost_price);
+        setVal('mCategory', p.category_id);
+        setVal('mBrand', p.brand_id);
 
         setCheck('mIsActive', p.is_active);
+        setCheck('mManageStock', p.manage_stock);
+        setCheck('mIsFeatured', p.is_featured);
 
         // stock
         if (data.warehouse_stock) {
             Object.entries(data.warehouse_stock).forEach(([id, s]) => {
                 const el = document.querySelector(`[name="warehouse_stock[${id}]"]`);
                 if (el) el.value = s.quantity;
+                const locEl = document.querySelector(`[name="location_code[${id}]"]`);
+                if (locEl && s.location_code) locEl.value = s.location_code;
             });
         }
 
@@ -205,12 +214,42 @@ document.addEventListener('DOMContentLoaded', () => {
     function clearImage() {
         const img = document.getElementById('mImgPreview');
         const wrap = document.getElementById('mImgPreviewWrap');
+        const input = document.getElementById('mImages');
         if (img) img.src = '';
         if (wrap) wrap.classList.add('d-none');
+        if (input) input.value = '';
     }
 
     function showToast(msg, type = 'info') {
         alert(msg); // simple version
     }
+
+    // ========== SKU Generation ==========
+    window.generateSKU = function() {
+        const skuInput = document.getElementById('mSku');
+        if (!skuInput) return;
+        
+        const random = Math.random().toString(36).slice(2, 8).toUpperCase();
+        skuInput.value = `PROD-${random}`;
+    };
+
+    // ========== Image Handling ==========
+    window.handleImageSelect = function(event) {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = ({ target }) => {
+            const img = document.getElementById('mImgPreview');
+            const wrap = document.getElementById('mImgPreviewWrap');
+            if (img) img.src = target?.result || '';
+            if (wrap) wrap.classList.remove('d-none');
+        };
+        reader.readAsDataURL(file);
+    };
+
+    window.removeImage = function() {
+        clearImage();
+    };
 
 });

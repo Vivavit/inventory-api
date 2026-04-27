@@ -287,6 +287,20 @@ class ProductApiController extends Controller
         $productData = $product->toArray();
         $productData['stock'] = $stock;
 
+        // Transform images for mobile app
+        $productData['images'] = $product->images->map(function($image) {
+            return [
+                'id' => $image->id,
+                'url' => $image->url,
+                'is_primary' => $image->is_primary,
+                'alt_text' => $image->alt_text,
+            ];
+        })->toArray();
+
+        // Add primary image URL for convenience
+        $primaryImage = $product->primaryImage;
+        $productData['image'] = $primaryImage ? $primaryImage->url : asset('images/product-default.svg');
+
         // Add warehouse info for non-admin users
         if (! $user->isAdmin()) {
             $warehouseIds = $user->warehouses()->pluck('id')->toArray();
