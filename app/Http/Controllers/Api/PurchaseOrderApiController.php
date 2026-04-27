@@ -151,7 +151,7 @@ public function index(Request $request): PurchaseOrderCollection
     /**
      * Display the specified resource.
      */
-    public function show(PurchaseOrder $purchaseOrder): PurchaseOrderResource
+    public function show(PurchaseOrder $purchaseOrder): PurchaseOrderResource|JsonResponse
     {
         $user = Auth::user();
 
