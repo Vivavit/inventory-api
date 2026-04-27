@@ -112,19 +112,10 @@ class ProductSeeder extends Seeder
                 ]
             );
 
-            // --- Images: delete old ones and recreate (idempotent) ---
+            // --- Images: Delete old image records (they won't have real files) ---
+            // Skip creating fake image entries. Users should upload actual product images.
+            // This prevents 404 errors from broken image references.
             $product->images()->delete();
-
-            $imageFiles = ['img_1.jpg', 'img_2.png', 'img_3.png', 'img_4.png', 'img_5.jpg', 'img_6.jpg'];
-            foreach ($imageFiles as $imgIndex => $imageFile) {
-                ProductImage::create([
-                    'product_id' => $product->id,
-                    'image_path' => 'products/'.$imageFile,
-                    'alt_text' => $product->name.' - Image '.($imgIndex + 1),
-                    'is_primary' => $imgIndex === 0,
-                    'sort_order' => $imgIndex,
-                ]);
-            }
 
             // --- Variants / Inventory ---
             if ($product->has_variants) {
