@@ -11,7 +11,6 @@ use App\Models\Warehouse;
 use App\Models\WarehouseProduct;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ProductController extends Controller
@@ -67,15 +66,15 @@ class ProductController extends Controller
         $validated['is_featured'] = $request->has('is_featured') ? 1 : 0;
         $validated['has_variants'] = false;
 
-        // Handle primary image upload (for image_path column)
+        // Handle primary image - Store in database
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             if ($image && $image->isValid()) {
                 try {
-                    $imageName = time().'_'.Str::random(10).'.'.$image->getClientOriginalExtension();
-                    $path = $image->storeAs('products', $imageName, 'public');
-                    $validated['image_path'] = $path;
-                    Log::info('Primary image stored: '.$path);
+                    $imageData = file_get_contents($image->getRealPath());
+                    $validated['image_data'] = $imageData;
+                    $validated['image_mime_type'] = $image->getMimeType();
+                    Log::info('Primary image stored in database');
                 } catch (\Exception $e) {
                     Log::error('Primary image upload failed: '.$e->getMessage());
                     return back()->with('error', 'Failed to upload primary image');
@@ -86,7 +85,7 @@ class ProductController extends Controller
         // Create product
         $product = Product::create($validated);
 
-        // Handle gallery images (ProductImage table)
+        // Handle gallery images - Store in database
         if ($request->hasFile('images')) {
             $files = $request->file('images');
             
@@ -97,17 +96,17 @@ class ProductController extends Controller
             foreach ($files as $index => $image) {
                 if ($image && $image->isValid()) {
                     try {
-                        $imageName = time().'_'.Str::random(10).'.'.$image->getClientOriginalExtension();
-                        $path = $image->storeAs('products', $imageName, 'public');
+                        $imageData = file_get_contents($image->getRealPath());
                         
                         ProductImage::create([
                             'product_id' => $product->id,
-                            'image_path' => $path,
+                            'image_data' => $imageData,
+                            'mime_type' => $image->getMimeType(),
                             'is_primary' => $index === 0,
                             'sort_order' => $index,
                         ]);
                         
-                        Log::info('Gallery image stored: '.$path);
+                        Log::info('Gallery image stored in database');
                     } catch (\Exception $e) {
                         Log::error('Gallery image upload failed: '.$e->getMessage());
                     }
@@ -224,20 +223,15 @@ class ProductController extends Controller
         $validated['is_active'] = $request->has('is_active') ? 1 : 0;
         $validated['is_featured'] = $request->has('is_featured') ? 1 : 0;
 
-        // Handle primary image update (image_path column)
+        // Handle primary image update - Store in database
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             if ($image && $image->isValid()) {
                 try {
-                    // Delete old primary image if exists
-                    if ($product->image_path) {
-                        Storage::disk('public')->delete($product->image_path);
-                    }
-
-                    $imageName = time().'_'.Str::random(10).'.'.$image->getClientOriginalExtension();
-                    $path = $image->storeAs('products', $imageName, 'public');
-                    $validated['image_path'] = $path;
-                    Log::info('Primary image updated: '.$path);
+                    $imageData = file_get_contents($image->getRealPath());
+                    $validated['image_data'] = $imageData;
+                    $validated['image_mime_type'] = $image->getMimeType();
+                    Log::info('Primary image updated in database');
                 } catch (\Exception $e) {
                     Log::error('Primary image update failed: '.$e->getMessage());
                     return response()->json([
@@ -251,7 +245,7 @@ class ProductController extends Controller
         // Update product
         $product->update($validated);
 
-        // Handle gallery images update (ProductImage table)
+        // Handle gallery images update - Store in database
         if ($request->hasFile('images')) {
             $files = $request->file('images');
             
@@ -261,7 +255,6 @@ class ProductController extends Controller
             
             // Delete old gallery images
             foreach ($product->images as $oldImage) {
-                Storage::disk('public')->delete($oldImage->image_path);
                 $oldImage->delete();
             }
             
@@ -269,17 +262,17 @@ class ProductController extends Controller
             foreach ($files as $index => $image) {
                 if ($image && $image->isValid()) {
                     try {
-                        $imageName = time().'_'.Str::random(10).'.'.$image->getClientOriginalExtension();
-                        $path = $image->storeAs('products', $imageName, 'public');
+                        $imageData = file_get_contents($image->getRealPath());
 
                         ProductImage::create([
                             'product_id' => $product->id,
-                            'image_path' => $path,
+                            'image_data' => $imageData,
+                            'mime_type' => $image->getMimeType(),
                             'is_primary' => $index === 0,
                             'sort_order' => $index,
                         ]);
                         
-                        Log::info('Gallery image updated: '.$path);
+                        Log::info('Gallery image updated in database');
                     } catch (\Exception $e) {
                         Log::error('Gallery image upload failed: '.$e->getMessage());
                         return response()->json([
@@ -363,14 +356,8 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         try {
-            // Delete primary image
-            if ($product->image_path) {
-                Storage::disk('public')->delete($product->image_path);
-            }
-
-            // Delete gallery images
+            // Delete gallery images from database
             foreach ($product->images as $image) {
-                Storage::disk('public')->delete($image->image_path);
                 $image->delete();
             }
 
@@ -399,7 +386,6 @@ class ProductController extends Controller
     public function deleteImage(ProductImage $image)
     {
         try {
-            Storage::disk('public')->delete($image->image_path);
             $image->delete();
             return back()->with('success', 'Image deleted successfully!');
         } catch (\Exception $e) {

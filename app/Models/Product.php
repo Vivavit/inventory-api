@@ -52,12 +52,6 @@ class Product extends Model
         'has_variants' => 'boolean',
     ];
 
-    protected $appends = [
-        'image_url',
-        'primary_image',
-        'all_image_urls',
-    ];
-
     public function category()
     {
         return $this->belongsTo(Category::class);

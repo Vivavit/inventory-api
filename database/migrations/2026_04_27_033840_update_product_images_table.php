@@ -6,25 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::table('product_images', function (Blueprint $table) {
-    $table->longText('image_data')->nullable();
-    $table->string('mime_type')->default('image/jpeg')->nullable();
-    // Keep image_path nullable for now, or drop it if you want
-});
+        Schema::table('products', function (Blueprint $table) {
+            if (!Schema::hasColumn('products', 'image_data')) {
+                $table->longText('image_data')->nullable();
+            }
+            if (!Schema::hasColumn('products', 'image_mime_type')) {
+                $table->string('image_mime_type')->default('image/jpeg')->nullable();
+            }
+            // Keep image_path for legacy support
+            if (!Schema::hasColumn('products', 'image_path')) {
+                $table->string('image_path')->nullable();
+            }
+        });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::table('product_images', function (Blueprint $table) {
-            $table->dropColumn(['image_data', 'mime_type']);
+        Schema::table('products', function (Blueprint $table) {
+            $table->dropColumn(['image_data', 'image_mime_type', 'image_path']);
         });
     }
 };
