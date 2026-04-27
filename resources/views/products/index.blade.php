@@ -46,18 +46,16 @@
                         @endphp
                         <tr>
                             <td>
-                                @if($product->image_path)
+                                @if($product->image_data)
                                     <img src="{{ $product->image_url }}"
                                          alt="{{ $product->name }}"
                                          class="product-thumbnail"
-                                         data-id="{{ $product->id }}"
-                                         onerror="this.src='https://placehold.co/68x46/e9fff9/03624C?text=?'">
+                                         data-id="{{ $product->id }}">
                                 @elseif($product->primaryImage)
                                     <img src="{{ $product->primaryImage->url }}"
                                          alt="{{ $product->name }}"
                                          class="product-thumbnail"
-                                         data-id="{{ $product->id }}"
-                                         onerror="this.src='https://placehold.co/68x46/e9fff9/03624C?text=?'">
+                                         data-id="{{ $product->id }}">
                                 @else
                                     <div style="width:68px;height:46px;background:var(--bg-tertiary);border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--text-secondary);" class="product-thumbnail" data-id="{{ $product->id }}">
                                         <i class="bi bi-image"></i>

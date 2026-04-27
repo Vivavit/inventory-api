@@ -15,6 +15,11 @@ use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
+    private function encodeImageForStorage(string $imageData): string
+    {
+        return base64_encode($imageData);
+    }
+
     public function index()
     {
         $products = Product::with(['category', 'brand', 'inventoryLocations', 'warehouseProducts', 'images'])
@@ -72,7 +77,7 @@ class ProductController extends Controller
             if ($image && $image->isValid()) {
                 try {
                     $imageData = file_get_contents($image->getRealPath());
-                    $validated['image_data'] = $imageData;
+                    $validated['image_data'] = $this->encodeImageForStorage($imageData);
                     $validated['image_mime_type'] = $image->getMimeType();
                     Log::info('Primary image stored in database');
                 } catch (\Exception $e) {
@@ -100,7 +105,7 @@ class ProductController extends Controller
                         
                         ProductImage::create([
                             'product_id' => $product->id,
-                            'image_data' => $imageData,
+                            'image_data' => $this->encodeImageForStorage($imageData),
                             'mime_type' => $image->getMimeType(),
                             'is_primary' => $index === 0,
                             'sort_order' => $index,
@@ -229,7 +234,7 @@ class ProductController extends Controller
             if ($image && $image->isValid()) {
                 try {
                     $imageData = file_get_contents($image->getRealPath());
-                    $validated['image_data'] = $imageData;
+                    $validated['image_data'] = $this->encodeImageForStorage($imageData);
                     $validated['image_mime_type'] = $image->getMimeType();
                     Log::info('Primary image updated in database');
                 } catch (\Exception $e) {
@@ -266,7 +271,7 @@ class ProductController extends Controller
 
                         ProductImage::create([
                             'product_id' => $product->id,
-                            'image_data' => $imageData,
+                            'image_data' => $this->encodeImageForStorage($imageData),
                             'mime_type' => $image->getMimeType(),
                             'is_primary' => $index === 0,
                             'sort_order' => $index,
