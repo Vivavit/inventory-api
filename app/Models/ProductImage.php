@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 
 class ProductImage extends Model
@@ -17,6 +16,8 @@ class ProductImage extends Model
         'product_id',
         'product_variant_id',
         'image_path',
+        'image_data',
+        'mime_type',
         'alt_text',
         'is_primary',
         'sort_order',
@@ -49,18 +50,54 @@ class ProductImage extends Model
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
     }
 
-    // ========== OPTIMIZED URL ACCESSOR ==========
+    // ========== IMAGE URL ACCESSOR ==========
     public function getUrlAttribute()
     {
-        // 1. Check if image_path is empty or null
-        if (empty($this->image_path)) {
-            return $this->getPlaceholderUrl();
+        // Priority 1: If image_data exists (stored in database), convert to data URL
+        if (!empty($this->image_data)) {
+            return $this->getImageDataUrl();
         }
 
-        // 2. Clean the path (remove leading slashes if present)
-        $cleanPath = ltrim($this->image_path, '/');
+        // Priority 2: If image_path exists (legacy file storage), use file URL
+        if (!empty($this->image_path)) {
+            return $this->getFileUrl();
+        }
 
-        // Always use asset() for consistent URLs
+        // Priority 3: Return placeholder
+        return $this->getPlaceholderUrl();
+    }
+
+    /**
+     * Convert binary image data to data URL for display
+     */
+    private function getImageDataUrl()
+    {
+        try {
+            $mimeType = $this->mime_type ?? 'image/jpeg';
+            
+            // If image_data is already a string (base64 or raw)
+            if (is_string($this->image_data)) {
+                // Check if it's already base64
+                if (preg_match('/^[A-Za-z0-9+\/=]+$/', $this->image_data)) {
+                    return "data:{$mimeType};base64," . $this->image_data;
+                }
+                // If it's raw binary, encode it
+                return "data:{$mimeType};base64," . base64_encode($this->image_data);
+            }
+
+            return $this->getPlaceholderUrl();
+        } catch (\Exception $e) {
+            Log::error('Error generating image data URL: ' . $e->getMessage());
+            return $this->getPlaceholderUrl();
+        }
+    }
+
+    /**
+     * Get file URL from storage
+     */
+    private function getFileUrl()
+    {
+        $cleanPath = ltrim($this->image_path, '/');
         return asset('storage/' . $cleanPath);
     }
 
@@ -69,7 +106,6 @@ class ProductImage extends Model
      */
     private function getPlaceholderUrl()
     {
-        // Try multiple placeholder options
         $placeholders = [
             'images/product-default.svg',
             'images/product-placeholder.jpg',
@@ -88,7 +124,6 @@ class ProductImage extends Model
             }
         }
 
-        // Final fallback
         return 'https://via.placeholder.com/300x300/e0e0e0/666666?text=No+Image';
     }
 }

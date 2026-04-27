@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class Product extends Model
@@ -33,7 +33,9 @@ class Product extends Model
         'meta_description',
         'views_count',
         'sold_count',
-        'image_path', // Add image_path for direct image reference
+        'image_path',
+        'image_data',
+        'image_mime_type',
     ];
 
     protected $casts = [
@@ -87,7 +89,6 @@ class Product extends Model
 
     public function getTotalStockAttribute()
     {
-        // Use eager loaded relation if available to avoid N+1 queries
         if ($this->relationLoaded('warehouseProducts')) {
             return $this->warehouseProducts->sum('quantity');
         }
@@ -110,21 +111,49 @@ class Product extends Model
 
     public function getImageUrlAttribute()
     {
-        if (empty($this->image_path)) {
-            return $this->getPlaceholderUrl();
+        // Priority 1: If image_data exists (stored in database)
+        if (!empty($this->image_data)) {
+            return $this->getImageDataUrl();
         }
 
-        $cleanPath = ltrim($this->image_path, '/');
+        // Priority 2: If image_path exists (legacy file storage)
+        if (!empty($this->image_path)) {
+            $cleanPath = ltrim($this->image_path, '/');
+            return asset('storage/' . $cleanPath);
+        }
 
-        // Always use asset() for consistent URLs
-        return asset('storage/' . $cleanPath);
+        // Priority 3: Return placeholder
+        return $this->getPlaceholderUrl();
+    }
+
+    /**
+     * Convert binary image data to data URL for display
+     */
+    private function getImageDataUrl()
+    {
+        try {
+            $mimeType = $this->image_mime_type ?? 'image/jpeg';
+            
+            if (is_string($this->image_data)) {
+                // Check if it's already base64
+                if (preg_match('/^[A-Za-z0-9+\/=]+$/', $this->image_data)) {
+                    return "data:{$mimeType};base64," . $this->image_data;
+                }
+                // If it's raw binary, encode it
+                return "data:{$mimeType};base64," . base64_encode($this->image_data);
+            }
+
+            return $this->getPlaceholderUrl();
+        } catch (\Exception $e) {
+            Log::error('Error generating primary image URL: ' . $e->getMessage());
+            return $this->getPlaceholderUrl();
+        }
     }
 
     protected static function boot()
     {
         parent::boot();
 
-        // Before create
         static::creating(function ($product) {
             if (empty($product->slug)) {
                 $product->slug = Str::slug($product->name);
@@ -135,7 +164,6 @@ class Product extends Model
             }
         });
 
-        // After create → create stock rows per warehouse
         static::created(function ($product) {
             $warehouses = Warehouse::where('is_active', true)->get();
 
@@ -152,41 +180,31 @@ class Product extends Model
             }
         });
 
-        // Before update
         static::updating(function ($product) {
             if ($product->isDirty('name')) {
                 $product->slug = Str::slug($product->name);
             }
         });
     }
+
     public function orderItems()
     {
         return $this->hasMany(\App\Models\OrderItem::class);
     }
 
-    // ========== IMAGE URL ACCESSORS ==========
-
-    /**
-     * Get primary image from ProductImage relationship
-     */
     public function getPrimaryImageAttribute()
     {
         return $this->images()->where('is_primary', true)->first() ?? $this->images()->first();
     }
 
-    /**
-     * Get all image URLs as array
-     */
     public function getAllImageUrlsAttribute()
     {
         $urls = [];
         
-        // Add primary image from image_path if exists
-        if (!empty($this->image_path)) {
+        if (!empty($this->image_data) || !empty($this->image_path)) {
             $urls[] = $this->image_url;
         }
         
-        // Add gallery images
         foreach ($this->images as $image) {
             $urls[] = $image->url;
         }
@@ -219,5 +237,4 @@ class Product extends Model
 
         return 'https://via.placeholder.com/300x300/e0e0e0/666666?text=No+Image';
     }
-    
 }
